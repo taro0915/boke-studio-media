@@ -1,0 +1,39 @@
+name: reply
+# 1時間おきにコメントへ自動返信（日本時間で毎時17分ごろ）
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      send:
+        description: "実際に返信する"
+        type: boolean
+        default: false
+concurrency:
+  group: boke-state
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: reply
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python studio/auto_reply_cloud.py ${{ (github.event_name == 'schedule' || inputs.send) && '--send' || '' }}
+      - name: save state
+        if: always()
+        run: |
+          git config user.name "boke-studio-bot"
+          git config user.email "boke-studio-bot@users.noreply.github.com"
+          git add studio/replied.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "replied.json update" && git pull --rebase && git push)
