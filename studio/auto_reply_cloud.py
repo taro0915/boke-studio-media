@@ -8,7 +8,7 @@ import requests
 import os
 
 ROOT = Path(__file__).resolve().parent
-STATE = ROOT / "replied.json"  # studio/replied.json
+STATE = ROOT / "replied.json"
 G = "https://graph.facebook.com/v24.0"
 OLLAMA = "http://localhost:11434/api/chat"
 MODEL = "qwen3:14b"
@@ -93,9 +93,9 @@ def make_reply(comment, context, env):
     if env.get("ANTHROPIC_API_KEY"):  # .env にキーがあれば Claude、なければPCの無料AI
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=60,
                           headers={"x-api-key": env["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"},
-                          json={"model": "claude-haiku-5-5", "max_tokens": 120, "system": SYSTEM,
+                          json={"model": "claude-haiku-5-5", "max_tokens": 300, "thinking": {"type": "disabled"}, "system": SYSTEM,
                                 "messages": [{"role": "user", "content": user}]})
-        out = r.json()["content"][0]["text"] if r.status_code == 200 else ""
+        out = "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text") if r.status_code == 200 else ""
     else:
         r = requests.post(OLLAMA, json={"model": MODEL, "stream": False, "options": {"temperature": 0.7},
                                         "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user + " /no_think"}]},
