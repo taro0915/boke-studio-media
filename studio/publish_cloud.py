@@ -95,6 +95,13 @@ def main():
             lt = lt.replace(tzinfo=JST)
         if (now() - lt).total_seconds() < MIN_GAP_SEC:
             log("前の投稿から2時間たっていません。投稿しません。"); return 0
+    # 二重投稿防止: 記録ファイルが古くても、インスタ側の実際の最新投稿時刻で確認する
+    if not a.dry_run:
+        latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])
+        if latest:
+            lt = datetime.datetime.fromisoformat(latest[0]["timestamp"].replace("+0000", "+00:00"))
+            if (now() - lt).total_seconds() < MIN_GAP_SEC:
+                log("インスタ側で2時間以内に投稿済み。二重投稿を防ぐため投稿しません。"); return 0
     caption = (post / "caption.txt").read_text(encoding="utf-8")
     log("対象:", post.name, "dry-run" if a.dry_run else "")
     urls = image_urls(post)
