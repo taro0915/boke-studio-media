@@ -1,0 +1,40 @@
+name: threads
+# Cloudflare の時計から起動: carousel(日本 12:17 / 21:17) / odai(19:17) / reply(毎時)
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "carousel / odai / reply"
+        type: string
+        default: "reply"
+concurrency:
+  group: threads-state
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  threads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pillow
+      - run: |
+          git config user.name "boke-studio-bot"
+          git config user.email "boke-studio-bot@users.noreply.github.com"
+      - name: run
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: unused
+          IG_USER_ID: unused
+        run: python studio/threads_cloud.py ${{ inputs.job }}
+      - name: save
+        if: always()
+        run: |
+          git add studio/threads_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "threads ${{ inputs.job }}" && git pull --rebase && git push)
