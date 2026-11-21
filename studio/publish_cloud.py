@@ -40,10 +40,14 @@ def api(method, path, tok, **params):
     return r.json()
 
 
-def next_post(state):
-    for d in sorted(POSTS.glob("s[0-9][0-9]_*")):
-        if d.name not in state["posted"] and (d / "1.jpg").exists():
-            return d
+def next_post(state, slot=0):
+    """比較テスト: その日の1本目・3本目は人が選んだ在庫(s)、2本目・4本目はAIだけで選んだ在庫(a)。
+    片方が切れたらもう片方から出す。"""
+    arms = ["s", "a"] if slot % 2 == 0 else ["a", "s"]
+    for arm in arms:
+        for d in sorted(POSTS.glob(f"{arm}[0-9][0-9]_*")):
+            if d.name not in state["posted"] and (d / "1.jpg").exists():
+                return d
     return None
 
 
@@ -77,11 +81,11 @@ def main():
     a = ap.parse_args()
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"posted": {}}
-    post = next_post(state)
-    if not post:
-        log("在庫なし。投稿しません。"); return 0
     today = now().date().isoformat()
     todays = [v for v in state["posted"].values() if v.get("date") == today]
+    post = next_post(state, len(todays))
+    if not post:
+        log("在庫なし。投稿しません。"); return 0
     if not a.dry_run and len(todays) >= MAX_PER_DAY:
         log(f"今日はすでに{MAX_PER_DAY}本投稿済み。投稿しません。"); return 0
     last = max([v.get("time", "") for v in todays] or [""])
@@ -124,10 +128,11 @@ def main():
     media_id = api("POST", f"{uid}/media_publish", tok, creation_id=parent)["id"]
     link = api("GET", media_id, tok, fields="permalink").get("permalink", "")
     state["posted"][post.name] = {"date": today, "time": now().isoformat(timespec="seconds"),
-                                  "media_id": media_id, "permalink": link, "ai_label": ai, "by": "cloud"}
+                                  "media_id": media_id, "permalink": link, "ai_label": ai, "by": "cloud",
+                                  "arm": "ai" if post.name.startswith("a") else "human"}
     STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
     log("投稿完了:", link)
-    log("残り在庫:", len([d for d in POSTS.glob("s[0-9][0-9]_*") if d.name not in state["posted"]]), "本")
+    log("残り在庫:", {arm: len([d for d in POSTS.glob(f"{arm}[0-9][0-9]_*") if d.name not in state["posted"]]) for arm in "sa"}, "本")
     return 0
 
 

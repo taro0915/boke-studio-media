@@ -84,7 +84,7 @@ def post_context(media_id, texts):
             items = ROOT / "posts" / folder / "items.json"
             if items.exists():
                 ids = json.loads(items.read_text(encoding="utf-8"))
-                return "\n".join(f"{i}枚目: {texts.get(x, '')}" for i, x in enumerate(ids, 1))
+                return "\n".join(f"{i}枚目: {texts.get(x, x.replace(chr(92) + 'n', '').replace(chr(10), ''))}" for i, x in enumerate(ids, 1))
     return ""
 
 
