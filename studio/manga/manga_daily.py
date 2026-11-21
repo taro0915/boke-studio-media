@@ -23,9 +23,12 @@ M, G = 22, 16                 # 外枠の余白・コマ間
 STYLE_REF = ROOT / "style_ref.png"
 STYLE_NOTE = ("Reference image 1 is ONLY a style guide: copy its drawing style, line weight, coloring, shading and palette exactly, "
               "but do NOT copy its people, faces, pose or scene.")
-STYLE = ("Japanese manga illustration, josei romance style, clean confident ink lines with soft watercolor coloring, "
-         "cinematic composition, warm emotional lighting, mature adult characters drawn with realistic age, "
-         "absolutely no text, no letters, no speech bubbles, no panel borders, no signature, no watermark")
+STYLE = ("hand-drawn Japanese manga panel by a professional josei manga artist, drawn with a G-pen nib: black ink line art "
+         "with varied line weight and slightly imperfect hand-made strokes, hatching and screentone shading, "
+         "colored afterwards with alcohol markers in soft flat tones, simple manga backgrounds, expressive manga eyes, "
+         "mature adult characters drawn with their real age. NOT a photograph, NOT photorealistic, NOT a 3D render, "
+         "NOT a digital painting, no glossy airbrushed AI look. "
+         "Absolutely no text, no letters, no speech bubbles, no panel borders, no signature, no watermark")
 
 
 def log(*a):
@@ -146,7 +149,7 @@ def small_png(img_bytes, size=500):
 
 
 QA_SYS = """You check one manga panel before it is published. Answer JSON only: {"ok": true/false, "issue": ""}.
-ok=false if ANY of: deformed or extra/missing fingers, hands or limbs; broken or melted face; readable text, letters, speech bubbles or watermark in the image; characters who are supposed to be 45-65 look like young people in their 20s (unless the requested scene is explicitly a flashback to their youth); nudity or sexual content; it clearly does not match the requested scene."""
+ok=false if ANY of: it looks like a photograph, a photorealistic image, a 3D render or a glossy digital painting instead of hand-drawn manga line art with marker coloring; deformed or extra/missing fingers, hands or limbs; broken or melted face; readable text, letters, speech bubbles or watermark in the image; characters who are supposed to be 45-65 look like young people in their 20s (unless the requested scene is explicitly a flashback to their youth); nudity or sexual content; it clearly does not match the requested scene."""
 
 
 def qa(img, scene, ages):
@@ -185,12 +188,24 @@ def wrap(text, font, draw, max_w):
     return lines
 
 
+def paper(im):
+    """紙の質感を薄く乗せて、手描き原稿らしくする。"""
+    import random
+    rnd = random.Random(7)
+    g = Image.new("L", (im.width // 3, im.height // 3))
+    g.putdata([rnd.randint(118, 138) for _ in range(g.width * g.height)])
+    g = g.resize(im.size, Image.BICUBIC).filter(ImageFilter.GaussianBlur(0.8))
+    tex = Image.merge("RGB", (g, g, g))
+    from PIL import ImageChops
+    return Image.blend(im, ImageChops.overlay(im, tex), 0.35)
+
+
 def fill_crop(img_bytes, w, h):
     im = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     s = max(w / im.width, h / im.height)
     im = im.resize((math.ceil(im.width * s), math.ceil(im.height * s)), Image.LANCZOS)
     x, y = (im.width - w) // 2, (im.height - h) // 2
-    return im.crop((x, y, x + w, y + h))
+    return paper(im.crop((x, y, x + w, y + h)))
 
 
 def text_on_panel(d, box, narration, lines, big):
