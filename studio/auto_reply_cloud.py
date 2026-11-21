@@ -8,7 +8,8 @@ import requests
 import os
 
 ROOT = Path(__file__).resolve().parent
-STATE = ROOT / "replied.json"
+LANG = os.environ.get("REPLY_LANG", "ja")
+STATE = ROOT / ("replied_en.json" if LANG == "en" else "replied.json")
 G = "https://graph.facebook.com/v24.0"
 OLLAMA = "http://localhost:11434/api/chat"
 MODEL = "qwen3:14b"
@@ -36,6 +37,16 @@ SYSTEM = """あなたはInstagramアカウント「おもしろボケテ」の�
 コメント: うちの旦那もこれ → 全国の旦那さん同じでした😂教えてくれてありがとうございます
 コメント: 大好評 盆栽の散歩代行（1回300円） → 本家のボケより面白いです😂次もお願いします！
 コメント: これAI？ → 写真はAIで作ってます！楽しんでもらえたら嬉しいです"""
+
+
+SYSTEM_EN = """You run the Instagram account @captionthis.daily: AI-generated photos with funny one-line captions.
+Reply to a follower's comment. Rules:
+- English, one short sentence, under 15 words. Warm, playful, casual. 0-1 emoji.
+- If the comment is their own caption/joke, hype it up and admit they beat us ("Okay you win this one 😂").
+- If they say which slide was funniest, thank them and mention it.
+- Answer simple questions briefly. No promises, no links, no hashtags.
+- If asked whether the photo is AI, say honestly the photos are AI-generated. Never claim the captions are human-written.
+- Never label or describe their comment. Output only the reply text."""
 
 
 def load_state():
@@ -94,7 +105,7 @@ def make_reply(comment, context, env):
     if env.get("ANTHROPIC_API_KEY"):  # .env にキーがあれば Claude、なければPCの無料AI
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=60,
                           headers={"x-api-key": env["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"},
-                          json={"model": "claude-haiku-5-5", "max_tokens": 300, "thinking": {"type": "disabled"}, "system": SYSTEM,
+                          json={"model": "claude-haiku-5-5", "max_tokens": 300, "thinking": {"type": "disabled"}, "system": SYSTEM_EN if LANG == "en" else SYSTEM,
                                 "messages": [{"role": "user", "content": user}]})
         out = "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text") if r.status_code == 200 else ""
     else:
