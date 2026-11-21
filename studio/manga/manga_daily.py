@@ -19,6 +19,10 @@ FONT_NARR = str(ROOT / "fonts" / "Lora.ttf")
 MODEL = os.environ.get("MANGA_MODEL", "flux-2-klein-4b")
 W, H = 1080, 1350
 M, G = 22, 16                 # 外枠の余白・コマ間
+# 絵柄の基準画像。毎回これを1枚目の参考画像として渡し、全話の絵柄をそろえる（人物は真似させない）
+STYLE_REF = ROOT / "style_ref.png"
+STYLE_NOTE = ("Reference image 1 is ONLY a style guide: copy its drawing style, line weight, coloring, shading and palette exactly, "
+              "but do NOT copy its people, faces, pose or scene.")
 STYLE = ("Japanese manga illustration, josei romance style, clean confident ink lines with soft watercolor coloring, "
          "cinematic composition, warm emotional lighting, mature adult characters drawn with realistic age, "
          "absolutely no text, no letters, no speech bubbles, no panel borders, no signature, no watermark")
@@ -287,19 +291,24 @@ def main():
         for c in ep["characters"]:
             p = WORK / f"char_{c['id']}.png"
             if not p.exists():
-                prompt = f"{STYLE}. Character reference portrait, upper body, plain soft background. {c['age']}-year-old Japanese {c['gender']}: {c['look']}"
-                p.write_bytes(draw_with_qa(prompt, [], "character portrait", ages, (768, 960))); log("キャラ", c["name"])
+                sref = [small_png(STYLE_REF.read_bytes())] if STYLE_REF.exists() else []
+                prompt = (f"{STYLE}. {STYLE_NOTE if sref else ''} Character reference portrait, upper body, plain soft background. "
+                          f"{c['age']}-year-old Japanese {c['gender']}: {c['look']}")
+                p.write_bytes(draw_with_qa(prompt, sref, "character portrait", ages, (768, 960))); log("キャラ", c["name"])
         for pi, pg in enumerate(ep["pages"], 1):
             boxes = page_boxes(len(pg["panels"]))
             for ki, (pn, box) in enumerate(zip(pg["panels"], boxes), 1):
                 p = WORK / f"p{pi}_{ki}.png"
                 if p.exists():
                     continue
-                ids = [x for x in pn.get("chars", []) if x in chars][:4]
+                ids = [x for x in pn.get("chars", []) if x in chars][:3]
                 refs = [small_png((WORK / f"char_{x}.png").read_bytes()) for x in ids]
-                who = "; ".join(f"the {chars[x]['gender']} in reference image {k + 1} is {chars[x]['name']}, {chars[x]['age']}, {chars[x]['look']}" for k, x in enumerate(ids))
-                prompt = (f"{STYLE}. {pn.get('shot', 'medium')} shot. Keep each character's face, hair and clothing exactly as in their reference image. "
+                off = 1 if STYLE_REF.exists() else 0
+                who = "; ".join(f"the {chars[x]['gender']} in reference image {k + 1 + off} is {chars[x]['name']}, {chars[x]['age']}, {chars[x]['look']}" for k, x in enumerate(ids))
+                prompt = (f"{STYLE}. {STYLE_NOTE if off else ''} {pn.get('shot', 'medium')} shot. Keep each character's face, hair and clothing exactly as in their reference image. "
                           f"{who}. Scene: {pn['scene']}")
+                if off:
+                    refs = [small_png(STYLE_REF.read_bytes())] + refs
                 p.write_bytes(draw_with_qa(prompt, refs, pn["scene"], ages, gen_size(box))); log("コマ", pi, ki)
     except QuotaOut as e:
         log("今日の画像の無料枠が終わりました。続きは次回。", str(e)[:120]); return 0
@@ -326,6 +335,8 @@ def main():
     (out / "episode.json").write_text(json.dumps(ep, ensure_ascii=False, indent=1), encoding="utf-8")
     hist.append({"title": ep["title"], "pattern": ep.get("pattern"), "premise": ep.get("premise"), "post": out.name})
     HIST.write_text(json.dumps(hist, ensure_ascii=False, indent=1), encoding="utf-8")
+    if not STYLE_REF.exists():   # 第1話の表紙を絵柄の基準にして、2話目以降をそろえる
+        STYLE_REF.write_bytes((WORK / "p1_1.png").read_bytes())
     for f in WORK.glob("*"):
         f.unlink()
     log("完成:", out.name, len(slides), "枚")
