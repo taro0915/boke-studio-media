@@ -26,6 +26,9 @@ STYLE_NOTE = ("Reference image 1 is ONLY a style guide: copy its drawing style, 
 STYLE = ("hand-drawn Japanese manga panel by a professional josei manga artist, drawn with a G-pen nib: black ink line art "
          "with varied line weight and slightly imperfect hand-made strokes, hatching and screentone shading, "
          "colored afterwards with alcohol markers in soft flat tones, simple manga backgrounds, expressive manga eyes, "
+         "classic romance-manga conventions: delicate thin lines on faces, soft gradient screentones, wind-blown hair, "
+         "sparkles or scattered petals behind characters at emotional peaks, tender close-ups of eyes and hands, "
+         "an original art style that does not imitate any specific artist or existing work, "
          "mature adult characters drawn with their real age. NOT a photograph, NOT photorealistic, NOT a 3D render, "
          "NOT a digital painting, no glossy airbrushed AI look. "
          "Absolutely no text, no letters, no speech bubbles, no panel borders, no signature, no watermark")
