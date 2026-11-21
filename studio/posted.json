@@ -100,6 +100,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "ai"
+  },
+  "s10_012": {
+   "date": "2026-11-22",
+   "time": "2026-11-22T07:31:13+09:00",
+   "media_id": "18657242062040677",
+   "permalink": "https://www.instagram.com/p/DgBTvTnjIr1/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "human"
   }
  }
 }
