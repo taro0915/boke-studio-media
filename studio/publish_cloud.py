@@ -82,7 +82,8 @@ def main():
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"posted": {}}
     today = now().date().isoformat()
-    todays = [v for v in state["posted"].values() if v.get("date") == today]
+    # 深夜(0-6時)の投稿は1日の上限に数えない（不具合で深夜に出た分で夕方・夜の枠が止まらないように）
+    todays = [v for v in state["posted"].values() if v.get("date") == today and v.get("time", "")[11:13] >= "06"]
     post = next_post(state, len(todays))
     if not post:
         log("在庫なし。投稿しません。"); return 0
