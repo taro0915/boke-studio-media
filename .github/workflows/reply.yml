@@ -69,7 +69,7 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG2_USER_ID }}
-        run: python studio/en_cloud.py publish
+        run: python studio/en_cloud.py publish ${{ inputs.en_force && '--dry-run' || '' }}
       - name: en save state
         if: always()
         run: |
