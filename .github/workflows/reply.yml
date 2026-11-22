@@ -9,6 +9,10 @@ on:
         description: "実際に返信する"
         type: boolean
         default: false
+      en_force:
+        description: "英語版(captionthis.daily)を時刻に関係なく1本作って投稿する"
+        type: boolean
+        default: false
 concurrency:
   group: boke-state
   cancel-in-progress: false
@@ -25,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests
+      - run: pip install requests pillow
       - name: reply (ja, omoshiroibokete)
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
@@ -49,3 +53,25 @@ jobs:
           git add studio/replied.json 2>/dev/null || true
           git add studio/replied_en.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "replied state update" && git pull --rebase && git push)
+      # 英語版 captionthis.daily：日本時間 10時台・22時台・0時台に写真ボケを1本（PC不要）
+      - name: en build
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python studio/en_cloud.py build ${{ inputs.en_force && '--force' || '' }}
+      - name: en save images
+        if: always()
+        run: |
+          git add studio/posts_en studio/en_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "en build" && git pull --rebase && git push)
+      - name: en publish
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG2_USER_ID }}
+        run: python studio/en_cloud.py publish
+      - name: en save state
+        if: always()
+        run: |
+          git add studio/en_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "en posted" && git pull --rebase && git push)
