@@ -1,0 +1,238 @@
+{
+ "title": "The Friday Freesia",
+ "pattern": "5",
+ "premise": "For a year, a shy widower buys one flower every Friday from a widowed florist, and she believes each one is meant for someone else.",
+ "characters": [
+  {
+   "id": "A",
+   "name": "Haruko",
+   "age": 56,
+   "gender": "woman",
+   "look": "Warm round face with soft smile lines, short silver-streaked black bob tucked behind her ears, gentle medium build. Always wears a forest-green florist's apron over a cream knit cardigan. Tortoiseshell reading glasses hang on a beaded cord around her neck."
+  },
+  {
+   "id": "B",
+   "name": "Kenji",
+   "age": 61,
+   "gender": "man",
+   "look": "Tall, lean, slightly stooped, with close-cropped gray hair, kind tired eyes, deep smile lines, and thin round wire-rimmed glasses. Wears a navy raincoat and carries a clear plastic umbrella. A worn brown leather wristwatch is on his left wrist."
+  },
+  {
+   "id": "C",
+   "name": "Mrs. Oda",
+   "age": 78,
+   "gender": "woman",
+   "look": "Tiny and sharp-eyed, with a white hair bun, a lavender cardigan, and a wooden cane with a small brass bell. She is the shotengai's friendly busybody."
+  }
+ ],
+ "pages": [
+  {
+   "panels": [
+    {
+     "shot": "wide",
+     "scene": "Rainy Friday dusk in an old Tokyo shotengai. Wet pavement reflects paper lanterns. A small flower shop glows amber at the center. Kenji stands at its open door under a clear umbrella, seen from behind and slightly to the side. Buckets of flowers line the entrance. Quiet, romantic, slightly lonely mood. Space at the top for the title.",
+     "chars": [
+      "B"
+     ],
+     "narration": "Every Friday at five, he bought one flower.",
+     "lines": []
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "medium",
+     "scene": "Inside the shop. Haruko stands behind the wooden counter, picking a yellow freesia from a bucket. Kenji waits on the other side, folding his umbrella, a little nervous. Warm lamplight, raindrops on the window.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "B",
+       "text": "Which one would you give to someone you like?"
+      },
+      {
+       "who": "A",
+       "text": "Freesia. It smells like spring."
+      }
+     ]
+    },
+    {
+     "shot": "extreme close-up (hands)",
+     "scene": "Close on Haruko's hands wrapping a single yellow freesia in pale paper and handing it across the counter. Kenji's fingers receive it, almost touching hers. Soft focus on the raindrops behind.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "She never asked who it was for.",
+     "lines": []
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "wide",
+     "scene": "Later that evening. Mrs. Oda leans on her cane at the counter and watches the door Kenji just left through, her eyebrows raised. Haruko tidies stems in the background.",
+     "chars": [
+      "A",
+      "C"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "C",
+       "text": "A whole year of Fridays. She must be lucky."
+      },
+      {
+       "who": "A",
+       "text": "Yes. Very lucky."
+      }
+     ]
+    },
+    {
+     "shot": "close-up",
+     "scene": "Haruko's face as she trims a stem. Her smile stays, but her eyes look somewhere far away. Glasses dangling from their cord.",
+     "chars": [
+      "A"
+     ],
+     "narration": "Her smile stayed. Her heart quietly sank.",
+     "lines": []
+    },
+    {
+     "shot": "extreme close-up (object)",
+     "scene": "A paper wall calendar behind the counter. Every Friday is circled in red pencil, a long row of circles going back months. Haruko's hand with the pencil is just entering the frame.",
+     "chars": [
+      "A"
+     ],
+     "narration": "",
+     "lines": []
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "wide",
+     "scene": "The next Friday. A heavy storm lashes the shotengai. Inside the shop, Haruko stands at the window looking out. The wall clock shows five past five. The doorway is empty and the street is nearly deserted.",
+     "chars": [
+      "A"
+     ],
+     "narration": "Five o'clock came. Then six.",
+     "lines": []
+    },
+    {
+     "shot": "close-up",
+     "scene": "Haruko's worried face reflected faintly in the rain-streaked glass. In her hands is a single yellow freesia she picked out and set aside without thinking.",
+     "chars": [
+      "A"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "A",
+       "text": "Silly. He is only a customer."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "wide splash",
+     "scene": "The door bursts open, the bell swinging. Kenji stands soaked and out of breath in the doorway. His clear umbrella is bent and broken in one hand. His other arm shields a small bundle against his chest under his raincoat. Haruko, startled, turns from the window with the freesia in her hand. Dramatic rain and warm light spilling onto the wet step.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "B",
+       "text": "Sorry. The trains stopped. So I ran."
+      },
+      {
+       "who": "A",
+       "text": "You ran... for one flower?"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "extreme close-up (object)",
+     "scene": "A small worn notebook opened in Kenji's damp hands. On each page a flattened yellow freesia is pressed, with a date written beneath in neat handwriting. Many pages, a whole year's worth.",
+     "chars": [
+      "B"
+     ],
+     "narration": "Fifty-two Fridays. Fifty-two pressed flowers.",
+     "lines": []
+    },
+    {
+     "shot": "medium",
+     "scene": "Kenji and Haruko face each other across the counter, dripping rain pooling at his feet. He is earnest and trembling a little. She holds the notebook with both hands, stunned.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "B",
+       "text": "I could never give them away. I was afraid."
+      },
+      {
+       "who": "A",
+       "text": "Then who were they for?"
+      }
+     ]
+    },
+    {
+     "shot": "close-up",
+     "scene": "Close on Haruko's eyes filling with tears, her lips parting in a disbelieving smile. Kenji's soft, hopeful face is blurred behind her.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "",
+     "lines": [
+      {
+       "who": "B",
+       "text": "For the woman who chose them."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "panels": [
+    {
+     "shot": "wide splash",
+     "scene": "Night in the shotengai, the rain now soft. The shop sign is flipped to closed behind them. Haruko and Kenji walk away under one red shop umbrella, shoulders touching, his hand gently holding hers. A yellow freesia is tucked behind her ear. Lanterns glow on the wet street. Tender, romantic, hopeful.",
+     "chars": [
+      "A",
+      "B"
+     ],
+     "narration": "Some flowers take a whole year to bloom.",
+     "lines": [
+      {
+       "who": "B",
+       "text": "Same time next Friday?"
+      },
+      {
+       "who": "A",
+       "text": "Come tomorrow too."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "caption": "He bought one flower every Friday for a year. She never dared to ask who it was for. 🌼\nSome love arrives slowly, in the rain, five o'clock sharp.\nWould you have asked him sooner, or waited like Haruko?"
+}
