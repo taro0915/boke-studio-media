@@ -127,6 +127,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "human"
+  },
+  "a05_172": {
+   "date": "2026-11-23",
+   "time": "2026-11-23T04:18:32+09:00",
+   "media_id": "18403636192161512",
+   "permalink": "https://www.instagram.com/p/DgDietEGsI4/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "ai"
   }
  }
 }
