@@ -10,7 +10,11 @@ on:
         type: boolean
         default: false
       en_force:
-        description: "英語版(captionthis.daily)を時刻に関係なく1本作って投稿する"
+        description: "英語版(captionthis.daily)を時刻に関係なく1本作る（投稿はテストのみ）"
+        type: boolean
+        default: false
+      story_force:
+        description: "日本語の話カルーセルを時刻に関係なく1本作る（投稿はテストのみ）"
         type: boolean
         default: false
 concurrency:
@@ -75,3 +79,29 @@ jobs:
         run: |
           git add studio/en_state.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "en posted" && git pull --rebase && git push)
+      # 日本語の「1枚1文の話」カルーセル：毎日22時台に1本（@omoshiroibokete、PC不要）
+      - name: story build
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "$(TZ=Asia/Tokyo date +%H)" = "22" ] || [ "${{ inputs.story_force }}" = "true" ]; then
+            sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+            python studio/story_cloud.py build ${{ inputs.story_force && '--force' || '' }}
+          fi
+      - name: story save images
+        if: always()
+        run: |
+          git add studio/stories studio/story_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "story build" && git pull --rebase && git push)
+      - name: story publish
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python studio/story_cloud.py publish ${{ inputs.story_force && '--dry-run' || '' }}
+      - name: story save state
+        if: always()
+        run: |
+          git add studio/story_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "story posted" && git pull --rebase && git push)
