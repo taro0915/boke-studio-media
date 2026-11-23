@@ -138,7 +138,7 @@ def build(force=False):
     if st.get("pending"):
         log("未投稿の pending あり"); return 0
     today = now().date().isoformat()
-    if not force and (now().hour != SLOT_HOUR or today in st["posted"]):
+    if not force and (now().hour != SLOT_HOUR or today in st["posted"] or any(k.startswith(today) and "test" not in k for k in st["posted"])):
         log("投稿枠ではないので作りません"); return 0
     kind = "funny" if now().toordinal() % 2 == 0 else "unlucky"
     slides, question, tags = ask_claude(kind)
@@ -150,7 +150,7 @@ def build(force=False):
         slide(s, foot).save(out / f"{i}.jpg", quality=90)
     caption = (f"{slides[0]}\n\n{question} コメントで教えてね👇\n\n"
                "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
-               + " ".join(tags + ["#創作", "#短編", "#ちょっといい話" if kind == "funny" else "#ついてない話"]))
+               + " ".join(dict.fromkeys(tags + ["#創作", "#短編", "#笑える話" if kind == "funny" else "#ついてない話"])))
     (out / "caption.txt").write_text(caption, encoding="utf-8")
     (out / "story.json").write_text(json.dumps({"kind": kind, "slides": slides}, ensure_ascii=False, indent=1), encoding="utf-8")
     st["pending"] = {"dir": key, "kind": kind}
@@ -185,6 +185,8 @@ def publish(dry=False):
     if not p:
         log("pending なし"); return 0
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
+    if not dry and now().hour not in (SLOT_HOUR, SLOT_HOUR + 1):
+        log("投稿は22時台（遅れても23時台）だけ。pending は次の枠で投稿"); return 0
     if not dry:
         latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])
         if latest:
