@@ -114,23 +114,55 @@ def slide(text, foot=None):
     return im
 
 
-def ask_claude(kind):
-    body = {"model": "claude-sonnet-5-5", "max_tokens": 2000,
-            "messages": [{"role": "user", "content": PROMPT.format(kind=KINDS[kind])}]}
+CRITIC = """あなたはInstagramの編集長です。次の{n}本の下書き（1枚1文のカルーセル用の創作話）を厳しく採点してください。
+採点軸（各10点）: 1枚目で指が止まるか / 途中でダレずに次をめくりたくなるか / オチが効いているか / 30〜60代の日本人の「あるある」に刺さるか。
+いちばん点の高い1本を選び、弱い文だけを書き直して完成版にしてください。条件は元と同じ（1枚1文・40字以内・7〜9枚・創作・禁止事項を守る・絵文字なし）。
+下書き:
+{drafts}
+JSONだけを返す: {{"scores": [各下書きの合計点], "slides": [...], "question": "...", "tags": [5個]}}"""
+
+
+def claude(prompt, max_tokens=3000):
+    body = {"model": "claude-sonnet-5-5", "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
     for _ in range(3):
-        r = requests.post("https://api.anthropic.com/v1/messages", timeout=120, json=body,
+        r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, json=body,
                           headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"})
         if r.status_code == 200:
             txt = "".join(c.get("text", "") for c in r.json()["content"] if c.get("type") == "text")
             m = re.search(r"\{.*\}", txt, re.S)
             if m:
-                data = json.loads(m.group(0))
-                slides = [s.strip() for s in data.get("slides", []) if s.strip()]
-                if 6 <= len(slides) <= 10 and all(len(s) <= 60 for s in slides):
-                    return slides, data.get("question", "あなたならどうする？"), data.get("tags", [])[:6]
+                try:
+                    return json.loads(m.group(0))
+                except json.JSONDecodeError:
+                    pass
         log("応答が不正、再試行", r.status_code, r.text[:200])
         time.sleep(5)
-    raise RuntimeError("話を作れませんでした")
+    return None
+
+
+def ok(slides):
+    return 6 <= len(slides) <= 10 and all(len(x) <= 60 for x in slides)
+
+
+def ask_claude(kind):
+    """3本書く → 編集長役が採点して一番いい1本を選び、弱い文だけ直す。"""
+    drafts = []
+    for _ in range(3):
+        d = claude(PROMPT.format(kind=KINDS[kind]))
+        if d and ok([x.strip() for x in d.get("slides", []) if x.strip()]):
+            drafts.append(d)
+    if not drafts:
+        raise RuntimeError("話を作れませんでした")
+    text = "\n\n".join(f"【下書き{i+1}】\n" + "\n".join(d["slides"]) for i, d in enumerate(drafts))
+    final = claude(CRITIC.format(n=len(drafts), drafts=text))
+    if final and ok([x.strip() for x in final.get("slides", []) if x.strip()]):
+        log("採点:", final.get("scores"))
+        src = final
+    else:
+        log("編集が失敗したので下書き1を使う")
+        src = drafts[0]
+    slides = [x.strip() for x in src["slides"] if x.strip()]
+    return slides, src.get("question") or drafts[0].get("question", "あなたならどうする？"), (src.get("tags") or drafts[0].get("tags", []))[:6]
 
 
 def build(force=False):
