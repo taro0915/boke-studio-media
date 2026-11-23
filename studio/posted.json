@@ -145,6 +145,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "human"
+  },
+  "a06_174": {
+   "date": "2026-11-23",
+   "time": "2026-11-23T11:32:00+09:00",
+   "media_id": "18118741730520605",
+   "permalink": "https://www.instagram.com/p/DgEUFr-CVsE/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "ai"
   }
  }
 }
