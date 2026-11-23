@@ -78,31 +78,59 @@ def font(size):
     raise RuntimeError("日本語の明朝フォントがありません（fonts-noto-cjk を入れてください）")
 
 
+def _phrases(text):
+    try:
+        import budoux
+        parts = budoux.load_default_japanese_parser().parse(text)
+    except Exception:
+        parts = list(text)
+    out = []
+    for t in parts:
+        if out and t and t[0] in "、。」！？）":
+            out[-1] += t
+        else:
+            out.append(t)
+    return out
+
+
 def wrap_ja(draw, text, f, maxw):
-    """読点・句点の後ろで優先的に改行し、それでも長ければ文字単位で折る。"""
-    chunks = re.findall(r"[^、。！？」]*[、。！？」]?", text)
-    chunks = [c for c in chunks if c]
-    lines, cur = [], ""
-    for c in chunks:
-        if draw.textlength(cur + c, font=f) <= maxw:
-            cur += c
-            continue
-        if cur:
-            lines.append(cur)
-        cur = ""
-        for ch in c:
-            if draw.textlength(cur + ch, font=f) > maxw:
-                lines.append(cur)
-                cur = ""
-            cur += ch
+    """読点・カギカッコの切れ目で優先して改行し、長い所だけ文節（BudouX）で折る。短すぎる行は前後とまとめる。"""
+    W_ = lambda t: draw.textlength(t, font=f)
+    clauses, cur = [], ""
+    for ch in text:
+        cur += ch
+        if ch in "、。！？" or (ch == "」" and len(cur) > 6):
+            clauses.append(cur)
+            cur = ""
     if cur:
-        lines.append(cur)
-    # 行頭に句読点が来たら前の行へ
-    for i in range(1, len(lines)):
-        while lines[i] and lines[i][0] in "、。」！？":
-            lines[i - 1] += lines[i][0]
-            lines[i] = lines[i][1:]
-    return [l for l in lines if l]
+        clauses.append(cur)
+    lines = []
+    for c in clauses:
+        if W_(c) <= maxw:
+            lines.append(c)
+            continue
+        k = int(-(-W_(c) // maxw))
+        target = W_(c) / k
+        line = ""
+        for ph in _phrases(c):
+            if line and (W_(line + ph) > maxw or W_(line + ph) > target * 1.15):
+                lines.append(line)
+                line = ph
+            else:
+                line += ph
+        if line:
+            lines.append(line)
+    # 短い行（6文字以下）は、収まるなら隣とまとめる
+    changed = True
+    while changed:
+        changed = False
+        for i, l in enumerate(lines):
+            if len(l) <= 6 and len(lines) > 1:
+                if i > 0 and W_(lines[i - 1] + l) <= maxw:
+                    lines[i - 1] += l; del lines[i]; changed = True; break
+                if i + 1 < len(lines) and W_(l + lines[i + 1]) <= maxw:
+                    lines[i + 1] = l + lines[i + 1]; del lines[i]; changed = True; break
+    return lines
 
 
 def slide(text, foot=None):
