@@ -26,6 +26,8 @@ RAW = f"https://raw.githubusercontent.com/{REPO}/main/studio/posts_en"
 API = "https://graph.facebook.com/v24.0"
 SLOTS = [10, 22, 0]          # JST hours
 MIN_GAP_SEC = 3 * 3600
+# captionthis.daily はフォロワーが実在しないためカルーセルはリーチ0。フォロワー外に届くリールで出す。
+FORMAT = os.environ.get("EN_FORMAT", "reel")
 W, H, PHOTO_H = 1080, 1350, 780
 
 FONT_BOLD = ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
@@ -147,6 +149,49 @@ def slide(photo, text, by):
     return im
 
 
+def reel_frames(photo, items, out):
+    """縦型1080x1920のリール用コマを作り、ffmpegで約18秒の動画にする。"""
+    import subprocess
+    VW, VH = 1080, 1920
+    fb, fr = font(FONT_BOLD, 64), font(FONT_REG, 36)
+    hook = font(FONT_BOLD, 72)
+    def frame(text, by, idx):
+        im = Image.new("RGB", (VW, VH), (12, 12, 12))
+        im.paste(photo.resize((VW, PHOTO_H)), (0, 360))
+        d = ImageDraw.Draw(im)
+        t = "Caption this 📸".replace(" 📸", "")
+        d.text(((VW - d.textlength(t, font=hook)) / 2, 150), t, font=hook, fill=(255, 214, 0))
+        sub = f"{idx}/{len(items)}  Which one wins?" if idx else "Read till the end 👀".replace(" 👀", "")
+        d.text(((VW - d.textlength(sub, font=fr)) / 2, 255), sub, font=fr, fill=(200, 200, 200))
+        if text:
+            lines = wrap(d, text, fb, VW - 120)
+            y = 360 + PHOTO_H + 70
+            for ln in lines[:4]:
+                d.text(((VW - d.textlength(ln, font=fb)) / 2, y), ln, font=fb, fill=(255, 255, 255))
+                y += 82
+            d.text(((VW - d.textlength("— " + by, font=fr)) / 2, y + 20), "— " + by, font=fr, fill=(160, 160, 160))
+        return im
+    tmp = out / "_frames"
+    tmp.mkdir(exist_ok=True)
+    seq = [(frame(None, "", 0), 1.4)] + [(frame(it["text"], it.get("by", "Anonymous"), i), 2.3) for i, it in enumerate(items, 1)]
+    lst = []
+    for i, (im, dur) in enumerate(seq):
+        fp = tmp / f"{i:02d}.png"
+        im.save(fp)
+        lst.append(f"file '{fp.name}'\nduration {dur}")
+    lst.append(f"file '{tmp.name}/{len(seq)-1:02d}.png'".replace(f"{tmp.name}/", ""))
+    (tmp / "list.txt").write_text("\n".join(lst) + "\n", encoding="utf-8")
+    video = out / "reel.mp4"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(tmp / "list.txt"),
+                    "-f", "lavfi", "-t", str(sum(dd for _, dd in seq)), "-i", "anullsrc=r=44100:cl=stereo",
+                    "-vf", "fps=30,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+                    "-c:a", "aac", "-shortest", "-movflags", "+faststart", str(video)], check=True)
+    for f in tmp.iterdir():
+        f.unlink()
+    tmp.rmdir()
+    return video
+
+
 def build(force=False):
     st = load_state()
     if st.get("pending"):
@@ -171,7 +216,9 @@ def build(force=False):
                "#captionthis #funny #funnypics #memes #lol #humor #relatable #dailylaugh #funnymemes #comedy")
     (out / "caption.txt").write_text(caption, encoding="utf-8")
     (out / "items.json").write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
-    st["pending"] = {"dir": src.name, "slot": key or "manual", "n": len(items)}
+    if FORMAT == "reel":
+        reel_frames(photo, items, out)
+    st["pending"] = {"dir": src.name, "slot": key or "manual", "n": len(items), "format": FORMAT}
     save_state(st)
     log("作成:", src.name, len(items), "枚")
     return 0
@@ -203,6 +250,9 @@ def publish(dry=False):
     if not p:
         log("pending なし"); return 0
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
+    h = now().hour
+    if not dry and not any(h in (x, (x + 1) % 24) for x in SLOTS):
+        log("投稿枠の時間ではないので見送り（pendingは次の枠で投稿）"); return 0
     if not dry:
         latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])
         if latest:
@@ -210,6 +260,8 @@ def publish(dry=False):
             if (now() - lt).total_seconds() < MIN_GAP_SEC:
                 log("直近に投稿済み。二重投稿防止のため見送り（pendingは次の枠で投稿）"); return 0
     d = OUT / p["dir"]
+    if p.get("format") == "reel":
+        return publish_reel(st, p, d, tok, uid, dry)
     files = sorted(d.glob("[0-9]*.jpg"), key=lambda f: int(f.stem))
     urls = [f"{RAW}/{d.name}/{f.name}" for f in files]
     for u in urls:
@@ -247,6 +299,44 @@ def publish(dry=False):
     st["pending"] = None
     save_state(st)
     log("投稿完了:", link)
+    return 0
+
+
+def publish_reel(st, p, d, tok, uid, dry):
+    url = f"{RAW}/{d.name}/reel.mp4"
+    for _ in range(30):
+        if requests.head(url, timeout=30).status_code == 200:
+            break
+        time.sleep(4)
+    else:
+        raise RuntimeError(f"動画URLが開けません: {url}")
+    caption = (d / "caption.txt").read_text(encoding="utf-8").replace("Comment the number 👇", "Comment the number (1-7) 👇")
+    cid = None
+    for prm in (dict(is_ai_generated="true"), {}):
+        try:
+            cid = api("POST", f"{uid}/media", tok, media_type="REELS", video_url=url, caption=caption, share_to_feed="true", **prm)["id"]
+            break
+        except RuntimeError as e:
+            log("リールのコンテナ失敗、再試行:", str(e)[:200])
+    if not cid:
+        raise RuntimeError("リールのコンテナを作れませんでした")
+    for _ in range(60):
+        s_ = api("GET", cid, tok, fields="status_code").get("status_code")
+        if s_ == "FINISHED":
+            break
+        if s_ == "ERROR":
+            raise RuntimeError("リールの処理がERROR")
+        time.sleep(5)
+    else:
+        raise RuntimeError("リールの処理が終わりません")
+    if dry:
+        log("dry-run: リールのコンテナ作成OK（投稿していません）"); return 0
+    mid = api("POST", f"{uid}/media_publish", tok, creation_id=cid)["id"]
+    link = api("GET", mid, tok, fields="permalink").get("permalink", "")
+    st["posted"][p["dir"]] = {"time": now().isoformat(timespec="seconds"), "slot": p["slot"], "format": "reel", "media_id": mid, "permalink": link}
+    st["pending"] = None
+    save_state(st)
+    log("リール投稿完了:", link)
     return 0
 
 

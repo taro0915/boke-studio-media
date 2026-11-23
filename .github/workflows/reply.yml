@@ -62,7 +62,12 @@ jobs:
         if: always()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python studio/en_cloud.py build ${{ inputs.en_force && '--force' || '' }}
+        run: |
+          h=$(TZ=Asia/Tokyo date +%H)
+          if [ "$h" = "10" ] || [ "$h" = "22" ] || [ "$h" = "00" ] || [ "${{ inputs.en_force }}" = "true" ]; then
+            which ffmpeg >/dev/null || sudo apt-get install -y -qq ffmpeg >/dev/null
+            python studio/en_cloud.py build ${{ inputs.en_force && '--force' || '' }}
+          fi
       - name: en save images
         if: always()
         run: |
