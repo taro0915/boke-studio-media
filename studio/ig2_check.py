@@ -21,3 +21,6 @@ for bd in ["country", "age", "gender"]:
         print(bd, [(r["dimension_values"][0], r["value"]) for r in res])
     except Exception:
         print(bd, json.dumps(d)[:300])
+# 音楽API（Audio API）が使えるか
+r = g("ig_audio", audio_type="music", user_id=uid, limit=5)
+print("AUDIO", json.dumps(r, ensure_ascii=False)[:600])
