@@ -190,6 +190,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "ai"
+  },
+  "s15_018": {
+   "date": "2026-11-24",
+   "time": "2026-11-24T18:01:11+09:00",
+   "media_id": "17902036593397880",
+   "permalink": "https://www.instagram.com/p/DgHla3-Dwu8/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "human"
   }
  }
 }
