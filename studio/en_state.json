@@ -23,12 +23,14 @@
    "slot": "2026-11-24_00",
    "media_id": "18584694022074488",
    "permalink": "https://www.instagram.com/p/DgF5iU8GttI/"
+  },
+  "s03_057": {
+   "time": "2026-11-24T10:18:53+09:00",
+   "slot": "manual",
+   "format": "reel",
+   "media_id": "18120528278330786",
+   "permalink": "https://www.instagram.com/reel/DgGwd2GGXm8/"
   }
  },
- "pending": {
-  "dir": "s03_057",
-  "slot": "manual",
-  "n": 7,
-  "format": "reel"
- }
+ "pending": null
 }
