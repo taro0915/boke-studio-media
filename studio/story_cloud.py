@@ -166,10 +166,10 @@ CRITIC = """あなたはInstagramの編集長です。次の{n}本の下書き�
 JSONだけを返す: {{"scores": [各下書きの合計点], "slides": [...], "question": "...", "tags": [5個]}}"""
 
 
-def claude(prompt, max_tokens=3000):
+def claude(prompt, max_tokens=16000):
     body = {"model": "claude-sonnet-5-5", "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
     for _ in range(3):
-        r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, json=body,
+        r = requests.post("https://api.anthropic.com/v1/messages", timeout=300, json=body,
                           headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"})
         if r.status_code == 200:
             txt = "".join(c.get("text", "") for c in r.json()["content"] if c.get("type") == "text")
