@@ -9,10 +9,6 @@ on:
         description: "実際に返信する"
         type: boolean
         default: false
-      en_force:
-        description: "英語版(captionthis.daily)を時刻に関係なく1本作る（投稿はテストのみ）"
-        type: boolean
-        default: false
       story_force:
         description: "日本語の話カルーセルを時刻に関係なく1本作る（投稿はテストのみ）"
         type: boolean
@@ -41,49 +37,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REPLY_LANG: ja
         run: python studio/auto_reply_cloud.py ${{ (github.event_name == 'schedule' || inputs.send) && '--send' || '' }}
-      - name: reply (en, captionthis.daily)
-        if: false  # 2026-11-24 一時停止（Metaの制限対策）
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
-          IG_USER_ID: ${{ secrets.IG2_USER_ID }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REPLY_LANG: en
-        run: python studio/auto_reply_cloud.py ${{ (github.event_name == 'schedule' || inputs.send) && '--send' || '' }}
       - name: save state
         if: always()
         run: |
           git config user.name "boke-studio-bot"
           git config user.email "boke-studio-bot@users.noreply.github.com"
           git add studio/replied.json 2>/dev/null || true
-          git add studio/replied_en.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "replied state update" && git pull --rebase && git push)
-      # 英語版 captionthis.daily：日本時間 10時台・22時台・0時台に写真ボケを1本（PC不要）
-      - name: en build
-        if: false  # 2026-11-24 一時停止（Metaの制限対策）
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          h=$(TZ=Asia/Tokyo date +%H)
-          if [ "$h" = "10" ] || [ "$h" = "22" ] || [ "$h" = "00" ] || [ "${{ inputs.en_force }}" = "true" ]; then
-            which ffmpeg >/dev/null || sudo apt-get install -y -qq ffmpeg >/dev/null
-            python studio/en_cloud.py build ${{ inputs.en_force && '--force' || '' }}
-          fi
-      - name: en save images
-        if: false  # 2026-11-24 一時停止（Metaの制限対策）
-        run: |
-          git add studio/posts_en studio/en_state.json 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "en build" && git pull --rebase && git push)
-      - name: en publish
-        if: false  # 2026-11-24 一時停止（Metaの制限対策）
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
-          IG_USER_ID: ${{ secrets.IG2_USER_ID }}
-        run: python studio/en_cloud.py publish ${{ inputs.en_force && '--dry-run' || '' }}
-      - name: en save state
-        if: false  # 2026-11-24 一時停止（Metaの制限対策）
-        run: |
-          git add studio/en_state.json 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "en posted" && git pull --rebase && git push)
       # 日本語の「1枚1文の話」カルーセル：毎日22時台に1本（@omoshiroibokete、PC不要）
       - name: story build
         if: always()
