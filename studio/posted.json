@@ -208,6 +208,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "ai"
+  },
+  "s16_026": {
+   "date": "2026-11-25",
+   "time": "2026-11-25T07:33:46+09:00",
+   "media_id": "18118781510109756",
+   "permalink": "https://www.instagram.com/p/DgJCakMGmjP/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "human"
   }
  }
 }
