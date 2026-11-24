@@ -5,10 +5,13 @@
    "kind": "unlucky",
    "media_id": "18134073076696893",
    "permalink": "https://www.instagram.com/p/DgFePBfGGPh/"
+  },
+  "2026-11-24_test0724": {
+   "time": "2026-11-24T22:18:31+09:00",
+   "kind": "naki",
+   "media_id": "18118832321037744",
+   "permalink": "https://www.instagram.com/p/DgIC4GRl0eJ/"
   }
  },
- "pending": {
-  "dir": "2026-11-24_test0724",
-  "kind": "naki"
- }
+ "pending": null
 }
