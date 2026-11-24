@@ -311,8 +311,20 @@ def publish_reel(st, p, d, tok, uid, dry):
     else:
         raise RuntimeError(f"動画URLが開けません: {url}")
     caption = (d / "caption.txt").read_text(encoding="utf-8").replace("Comment the number 👇", "Comment the number (1-7) 👇")
+    # Instagramの流行りの音楽を自動で付ける（Audio API）。使った曲は続けて使わない。
+    audio = {}
+    try:
+        tracks = api("GET", "ig_audio", tok, audio_type="music", user_id=uid, limit=30).get("audio", [])
+        used = set(st.get("used_audio", [])[-20:])
+        pick = next((t for t in tracks if t.get("audio_id") not in used and 15000 <= t.get("duration_in_ms", 0)), None)
+        if pick:
+            audio = {"audio_configuration": json.dumps({"audio_id": pick["audio_id"], "audio_volume": 100, "video_volume": 1})}
+            st.setdefault("used_audio", []).append(pick["audio_id"])
+            log("音楽:", pick.get("title"), "/", pick.get("display_artist"))
+    except RuntimeError as e:
+        log("音楽の取得に失敗（音楽なしで投稿）:", str(e)[:200])
     cid = None
-    for prm in (dict(is_ai_generated="true"), {}):
+    for prm in (dict(is_ai_generated="true", **audio), dict(**audio), dict(is_ai_generated="true"), {}):
         try:
             cid = api("POST", f"{uid}/media", tok, media_type="REELS", video_url=url, caption=caption, share_to_feed="true", **prm)["id"]
             break
