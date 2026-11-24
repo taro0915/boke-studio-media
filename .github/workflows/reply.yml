@@ -42,7 +42,7 @@ jobs:
           REPLY_LANG: ja
         run: python studio/auto_reply_cloud.py ${{ (github.event_name == 'schedule' || inputs.send) && '--send' || '' }}
       - name: reply (en, captionthis.daily)
-        if: always()
+        if: false  # 2026-11-24 一時停止（Metaの制限対策）
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG2_USER_ID }}
@@ -59,7 +59,7 @@ jobs:
           git diff --cached --quiet || (git commit -m "replied state update" && git pull --rebase && git push)
       # 英語版 captionthis.daily：日本時間 10時台・22時台・0時台に写真ボケを1本（PC不要）
       - name: en build
-        if: always()
+        if: false  # 2026-11-24 一時停止（Metaの制限対策）
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -69,18 +69,18 @@ jobs:
             python studio/en_cloud.py build ${{ inputs.en_force && '--force' || '' }}
           fi
       - name: en save images
-        if: always()
+        if: false  # 2026-11-24 一時停止（Metaの制限対策）
         run: |
           git add studio/posts_en studio/en_state.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "en build" && git pull --rebase && git push)
       - name: en publish
-        if: always()
+        if: false  # 2026-11-24 一時停止（Metaの制限対策）
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG2_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG2_USER_ID }}
         run: python studio/en_cloud.py publish ${{ inputs.en_force && '--dry-run' || '' }}
       - name: en save state
-        if: always()
+        if: false  # 2026-11-24 一時停止（Metaの制限対策）
         run: |
           git add studio/en_state.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "en posted" && git pull --rebase && git push)

@@ -122,6 +122,11 @@ def odai():
 
 
 def reply():
+    # Metaの「自動化」判定を避けるため、返信は3時間おき（日本時間 0,3,6,...時）だけ
+    import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    if _dt.datetime.now(_Z("Asia/Tokyo")).hour % 3 != 0:
+        print("返信は3時間おき。今回はスキップ"); return 0
     sys.path.insert(0, str(ROOT))
     os.environ.setdefault("REPLY_LANG", "ja")
     import auto_reply_cloud as ar

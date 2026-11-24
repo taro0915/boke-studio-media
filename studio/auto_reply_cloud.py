@@ -13,7 +13,7 @@ STATE = ROOT / ("replied_en.json" if LANG == "en" else "replied.json")
 G = "https://graph.facebook.com/v24.0"
 OLLAMA = "http://localhost:11434/api/chat"
 MODEL = "qwen3:14b"
-MAX_PER_RUN = 10
+MAX_PER_RUN = 6
 DAYS = 7
 NG = ["死ね", "しね", "殺す", "ころす", "きもい", "キモい", "うざ", "ブス", "カス", "ゴミ", "バカ", "ばか", "アホ",
       "副業", "稼げ", "儲か", "DM", "ＤＭ", "フォロバ", "相互", "投資", "LINE", "ライン追加"]
@@ -122,6 +122,11 @@ def make_reply(comment, context, env):
 
 
 def main():
+    # Metaの「自動化」判定を避けるため、返信は3時間おき（日本時間 0,3,6,...時）だけ
+    import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    if _dt.datetime.now(_Z("Asia/Tokyo")).hour % 3 != 0:
+        print("返信は3時間おき。今回はスキップ"); return 0
     send = "--send" in sys.argv
     env = dict(os.environ)
     t, uid = env["IG_ACCESS_TOKEN"], env["IG_USER_ID"]
