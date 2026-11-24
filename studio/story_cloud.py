@@ -50,7 +50,10 @@ PROMPT = """あなたはInstagramで何十万回も読まれる「1枚1文の実
 ルール:
 - 完全な創作。実在の人物・会社・学校・事件・地名の特定につながる固有名詞は使わない。
 - 禁止: 自殺・自傷、子どもへの暴力や虐待、性的な内容、病気や死の生々しい描写、差別、政治、宗教、犯罪の手口。
-- 1枚1文（45字以内）、全部で8〜10枚。文体は「〜だった。」の淡々とした語り。絵文字なし。
+- 1枚1文（45字以内）、全部で13〜16枚。文体は「〜だった。」の淡々とした語り。絵文字なし。
+- 構成: 1枚目のひっかけ → 状況説明(2〜3枚) → 1回目の小さな意外 → 盛り上がり → 2回目の大きな意外 → 最後の一撃。中だるみの説明文は入れない。
+- 最後の2〜3枚が一番大事（読者はここで「いいね」を押す）。読後に胸がざわつく・スカッとする・泣ける・吹き出す、のどれかを必ず起こす。
+- 読者が「自分ならこうする」「これはひどい」と意見を言いたくなる、白黒つけにくい要素を1つ入れる（コメントを生むため）。
 
 JSONだけを返す: {{"slides": ["1枚目", "2枚目", ...], "question": "読者が自分の意見や体験を書きたくなる問いかけ（例: あなたなら許せますか？／どっちが悪いと思う？）", "tags": ["#ハッシュタグ", 5個]}}"""
 
@@ -133,11 +136,14 @@ def wrap_ja(draw, text, f, maxw):
     return lines
 
 
-def slide(text, foot=None):
-    im = Image.new("RGB", (W, H), BG)
+TINT = {"sukatto": (38, 44, 54), "shuraba": (52, 36, 36), "donden": (40, 40, 48), "unlucky": (46, 44, 38), "naki": (43, 43, 43)}
+
+
+def slide(text, foot=None, kind=None):
+    im = Image.new("RGB", (W, H), TINT.get(kind, BG))
     d = ImageDraw.Draw(im)
     f = font(62)
-    lines = wrap_ja(d, text, f, W - 260)
+    lines = sum((wrap_ja(d, t, f, W - 260) for t in text.split("\n") if t), [])
     lh = 112
     y = 330 - (len(lines) - 3) * lh // 2 if len(lines) > 3 else 330
     for ln in lines:
@@ -153,8 +159,8 @@ def slide(text, foot=None):
 
 
 CRITIC = """あなたはInstagramの編集長です。次の{n}本の下書き（1枚1文のカルーセル用の創作話）を厳しく採点してください。
-採点軸（各10点）: 1枚目で指が止まるか / 1枚目から結末が予想できないか（予想できたら0点） / 途中でダレずに次をめくりたくなるか / 最後に予想を裏切られるか / 読後に誰かに話したくなるか・コメントしたくなるか。
-いちばん点の高い1本を選び、弱い文だけを書き直して完成版にしてください。条件は元と同じ（1枚1文・45字以内・8〜10枚・創作・禁止事項を守る・絵文字なし）。
+採点軸（各10点）: 1枚目で指が止まるか / 1枚目から結末が予想できないか（予想できたら0点） / 13枚以上あっても途中でダレないか / 最後の2〜3枚の感情の強さ（いいねを押したくなるか） / 読者が意見を言いたくなる要素があるか（コメント）。
+いちばん点の高い1本を選び、弱い文だけを書き直して完成版にしてください。条件は元と同じ（1枚1文・45字以内・13〜16枚・創作・禁止事項を守る・絵文字なし）。
 下書き:
 {drafts}
 JSONだけを返す: {{"scores": [各下書きの合計点], "slides": [...], "question": "...", "tags": [5個]}}"""
@@ -179,7 +185,7 @@ def claude(prompt, max_tokens=3000):
 
 
 def ok(slides):
-    return 6 <= len(slides) <= 11 and all(len(x) <= 60 for x in slides)
+    return 10 <= len(slides) <= 18 and all(len(x) <= 60 for x in slides)
 
 
 def ask_claude(kind):
@@ -216,8 +222,10 @@ def build(force=False):
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
     for i, s in enumerate(slides, 1):
-        foot = "※この話はフィクションです" if i == len(slides) else None
-        slide(s, foot).save(out / f"{i}.jpg", quality=90)
+        slide(s, None, kind).save(out / f"{i}.jpg", quality=90)
+    # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）
+    closing = question + "\nコメントで教えてください。"
+    slide(closing, "※この話はフィクションです", kind).save(out / f"{len(slides) + 1}.jpg", quality=90)
     caption = (f"{slides[0]}\n\n{question} コメントで教えてね👇\n\n"
                "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
                + " ".join(dict.fromkeys(tags + ["#創作", "#短編", {"sukatto": "#スカッとする話", "shuraba": "#修羅場", "donden": "#どんでん返し", "unlucky": "#ついてない話", "naki": "#泣ける話"}[kind]])))
