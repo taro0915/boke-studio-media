@@ -34,7 +34,7 @@ KINDS = {
     "naki": "じんわり泣ける話。不器用な家族（父・母・祖父母・夫婦）が、言葉にしなかった思いを最後に知る",
 }
 # スカッと系が一番伸びたので半分をスカッとにする（2026-11-25）
-ROTATION = ["sukatto", "donden", "sukatto", "naki", "sukatto", "shuraba", "sukatto", "unlucky"]
+ROTATION = ["sukatto", "donden", "naki", "sukatto", "shuraba", "sukatto", "unlucky", "sukatto"]
 
 PROMPT = """あなたはInstagramで何十万回も読まれる「1枚1文の実話風ショートストーリー」の作家です。読者は日本の30〜60代。
 今日のジャンル: {kind}
