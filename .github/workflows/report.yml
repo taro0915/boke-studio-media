@@ -2,6 +2,10 @@ name: report
 # 読むだけ：@omoshiroibokete の投稿ごとの数字を studio/reports/ig_latest.json に保存
 on:
   workflow_dispatch:
+    inputs:
+      ids:
+        description: "画像を取る投稿ID（スペース区切り）"
+        default: ""
 concurrency:
   group: report
 permissions:
@@ -18,7 +22,7 @@ jobs:
       - env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-        run: python studio/ig_report.py
+        run: python studio/ig_report.py && python studio/ig_top_images.py ${{ inputs.ids }}
       - run: |
           git config user.name "boke-studio-bot"
           git config user.email "boke-studio-bot@users.noreply.github.com"
