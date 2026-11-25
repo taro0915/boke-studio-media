@@ -33,8 +33,8 @@ KINDS = {
     "unlucky": "ついてない話。小さな不運が雪だるま式に重なり、最後は思わず笑うか、ちょっと救われるオチ",
     "naki": "じんわり泣ける話。不器用な家族（父・母・祖父母・夫婦）が、言葉にしなかった思いを最後に知る",
 }
-# スカッと系が一番伸びたので半分をスカッとにする（2026-11-25）
-ROTATION = ["sukatto", "donden", "naki", "sukatto", "shuraba", "sukatto", "unlucky", "sukatto"]
+# スカッと系が一番伸びたので4分の3をスカッとにする（2026-11-25）。飽きないよう舞台は毎回変える
+ROTATION = ["sukatto", "sukatto", "donden", "sukatto", "sukatto", "naki", "sukatto", "sukatto"]
 
 PROMPT = """あなたはInstagramで何十万回も読まれる「1枚1文の実話風ショートストーリー」の作家です。読者は日本の30〜60代。
 今日のジャンル: {kind}
@@ -196,11 +196,14 @@ def ok(slides):
     return 10 <= len(slides) <= 18 and all(len(x) <= 50 for x in slides)
 
 
-def ask_claude(kind):
+STAGES = ["会社（上司・同僚）", "義母・義実家", "ママ友・PTA", "元夫・元妻", "ご近所・マンション", "お店（客と店員）", "親戚の集まり", "取引先・営業先"]
+
+
+def ask_claude(kind, stage=None):
     """3本書く → 編集長役が採点して一番いい1本を選び、弱い文だけ直す。"""
     drafts = []
     for _ in range(3):
-        d = claude(PROMPT.format(kind=KINDS[kind]))
+        d = claude(PROMPT.format(kind=KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "")))
         if d and ok([x.strip() for x in d.get("slides", []) if x.strip()]):
             drafts.append(d)
     if not drafts:
@@ -227,7 +230,8 @@ def build(force=False):
     if not force and (now().hour not in SLOT_HOURS or slot in st["posted"]):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
-    slides, question, tags = ask_claude(kind)
+    stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None
+    slides, question, tags = ask_claude(kind, stage)
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
