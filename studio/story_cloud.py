@@ -51,7 +51,13 @@ PROMPT = """あなたはInstagramで何十万回も読まれる「1枚1文の実
 ルール:
 - 完全な創作。実在の人物・会社・学校・事件・地名の特定につながる固有名詞は使わない。
 - 禁止: 自殺・自傷、子どもへの暴力や虐待、性的な内容、病気や死の生々しい描写、差別、政治、宗教、犯罪の手口。
-- 1枚1文（45字以内）、全部で13〜16枚。文体は「〜だった。」の淡々とした語り。絵文字なし。
+- 全部で13〜16枚。文体は「〜だった。」の淡々とした語り。絵文字なし。
+- スマホで、電車の中やリビングでさっと読まれる。ひと目で意味がわかる文にする:
+  ・1枚1文、35字以内。長くなるなら2枚に分ける。
+  ・小学校高学年でもわかる言葉だけを使う。難しい漢字・四字熟語・業界用語・カタカナ語は使わない（例:「稟議」→「会社の申請」、「エビデンス」→「証拠」）。
+  ・だれが何をしたかを毎回はっきり書く。「彼」「それ」など、指すものがわかりにくい言葉は避ける。
+  ・登場人物は「私」「部長」「義母」「夫」のように役割で呼ぶ。名前は付けない。
+  ・セリフは「」で短く。1枚に出来事は1つだけ。
 - 構成: 1枚目のひっかけ → 状況説明(2〜3枚) → 1回目の小さな意外 → 盛り上がり → 2回目の大きな意外 → 最後の一撃。中だるみの説明文は入れない。
 - 最後の2〜3枚が一番大事（読者はここで「いいね」を押す）。読後に胸がざわつく・スカッとする・泣ける・吹き出す、のどれかを必ず起こす。
 - 読者が「自分ならこうする」「これはひどい」と意見を言いたくなる、白黒つけにくい要素を1つ入れる（コメントを生むため）。
@@ -161,14 +167,15 @@ def slide(text, foot=None, kind=None):
 
 CRITIC = """あなたはInstagramの編集長です。次の{n}本の下書き（1枚1文のカルーセル用の創作話）を厳しく採点してください。
 採点軸（各10点）: 1枚目で指が止まるか / 1枚目から結末が予想できないか（予想できたら0点） / 13枚以上あっても途中でダレないか / 最後の2〜3枚の感情の強さ（いいねを押したくなるか） / 読者が意見を言いたくなる要素があるか（コメント）。
-いちばん点の高い1本を選び、弱い文だけを書き直して完成版にしてください。条件は元と同じ（1枚1文・45字以内・13〜16枚・創作・禁止事項を守る・絵文字なし）。
+いちばん点の高い1本を選び、弱い文だけを書き直して完成版にしてください。条件は元と同じ（1枚1文・35字以内・13〜16枚・創作・禁止事項を守る・絵文字なし）。
+仕上げとして全文を読み直し、スマホでひと目で読めるか（難しい言葉・長い文・だれのことかわからない文がないか）を直し、誤字脱字・不自然な日本語・話の矛盾をゼロにしてください。
 下書き:
 {drafts}
 JSONだけを返す: {{"scores": [各下書きの合計点], "slides": [...], "question": "...", "tags": [5個]}}"""
 
 
-def claude(prompt, max_tokens=16000):
-    body = {"model": "claude-sonnet-5-5", "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
+def claude(prompt, max_tokens=16000, model="claude-sonnet-5-5"):
+    body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
     for _ in range(3):
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=300, json=body,
                           headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"})
@@ -186,7 +193,7 @@ def claude(prompt, max_tokens=16000):
 
 
 def ok(slides):
-    return 10 <= len(slides) <= 18 and all(len(x) <= 60 for x in slides)
+    return 10 <= len(slides) <= 18 and all(len(x) <= 50 for x in slides)
 
 
 def ask_claude(kind):
@@ -199,7 +206,8 @@ def ask_claude(kind):
     if not drafts:
         raise RuntimeError("話を作れませんでした")
     text = "\n\n".join(f"【下書き{i+1}】\n" + "\n".join(d["slides"]) for i, d in enumerate(drafts))
-    final = claude(CRITIC.format(n=len(drafts), drafts=text))
+    # 仕上げ（選定・推敲・校正）は一番賢いOpusで行う
+    final = claude(CRITIC.format(n=len(drafts), drafts=text), max_tokens=24000, model="claude-opus-5-5")
     if final and ok([x.strip() for x in final.get("slides", []) if x.strip()]):
         log("採点:", final.get("scores"))
         src = final
