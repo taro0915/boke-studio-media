@@ -1,0 +1,26 @@
+name: report
+# 読むだけ：@omoshiroibokete の投稿ごとの数字を studio/reports/ig_latest.json に保存
+on:
+  workflow_dispatch:
+concurrency:
+  group: report
+permissions:
+  contents: write
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: pip install requests
+      - env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python studio/ig_report.py
+      - run: |
+          git config user.name "boke-studio-bot"
+          git config user.email "boke-studio-bot@users.noreply.github.com"
+          git add studio/reports
+          git diff --cached --quiet || (git commit -m "ig report" && git pull --rebase && git push)
