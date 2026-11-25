@@ -232,7 +232,7 @@ def build(force=False):
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
     # 通し番号（シリーズとして集めたくなるように）
-    no = sum(1 for k in st["posted"] if "test" not in k) + 1
+    no = len(st["posted"]) + 1
     label = {"sukatto": "スカッとする話", "shuraba": "修羅場の話", "donden": "どんでん返しの話", "unlucky": "ついてない話", "naki": "泣ける話"}[kind]
     series = f"{label} No.{no}"
     for i, s in enumerate(slides, 1):
