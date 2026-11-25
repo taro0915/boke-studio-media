@@ -217,6 +217,15 @@
    "ai_label": true,
    "by": "cloud",
    "arm": "human"
+  },
+  "a10_004": {
+   "date": "2026-11-25",
+   "time": "2026-11-25T11:32:13+09:00",
+   "media_id": "18027115034717789",
+   "permalink": "https://www.instagram.com/p/DgJdtLgF5E_/",
+   "ai_label": true,
+   "by": "cloud",
+   "arm": "ai"
   }
  }
 }
