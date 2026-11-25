@@ -81,8 +81,11 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
-    if not a.dry_run and now().hour not in POST_HOURS:
-        log("ボケは朝7:30と夕方18:00だけ。この時間は投稿しません。"); return 0
+    if not a.dry_run:
+        d = now().date().isoformat()
+        hours = set() if d <= "2026-11-28" else ({18, 19} if d <= "2026-12-01" else POST_HOURS)
+        if now().hour not in hours:
+            log("ブロック明けの段階的再開中（〜11/28休み、〜12/1は18時だけ）。この時間は投稿しません。"); return 0
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"posted": {}}
     today = now().date().isoformat()
     # 深夜(0-6時)の投稿は1日の上限に数えない（不具合で深夜に出た分で夕方・夜の枠が止まらないように）
