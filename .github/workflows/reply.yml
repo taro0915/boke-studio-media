@@ -44,13 +44,14 @@ jobs:
           git config user.email "boke-studio-bot@users.noreply.github.com"
           git add studio/replied.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "replied state update" && git pull --rebase && git push)
-      # 日本語の「1枚1文の話」カルーセル：毎日22時台に1本（@omoshiroibokete、PC不要）
+      # 日本語の「1枚1文の話」カルーセル：毎日12時台と22時台に1本ずつ（@omoshiroibokete、PC不要）
       - name: story build
         if: always()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if [ "$(TZ=Asia/Tokyo date +%H)" = "22" ] || [ "${{ inputs.story_force }}" = "true" ]; then
+          h=$(TZ=Asia/Tokyo date +%H)
+          if [ "$h" = "12" ] || [ "$h" = "22" ] || [ "${{ inputs.story_force }}" = "true" ]; then
             sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
             python studio/story_cloud.py build ${{ inputs.story_force && '--force' || '' }}
           fi

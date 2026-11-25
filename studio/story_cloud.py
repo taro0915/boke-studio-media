@@ -19,7 +19,7 @@ STATE = ROOT / "story_state.json"
 REPO = os.environ.get("GITHUB_REPOSITORY", "taro0915/boke-studio-media")
 RAW = f"https://raw.githubusercontent.com/{REPO}/main/studio/stories"
 API = "https://graph.facebook.com/v24.0"
-SLOT_HOUR = 22
+SLOT_HOURS = [12, 22]  # 昼休みと寝る前（話カルーセルはボケの約3倍読まれるため1日2本）
 MIN_GAP_SEC = 3600
 W, H = 1080, 1350
 BG, FG, SUB = (43, 43, 43), (236, 233, 226), (150, 147, 140)
@@ -214,11 +214,12 @@ def build(force=False):
     if st.get("pending"):
         log("未投稿の pending あり"); return 0
     today = now().date().isoformat()
-    if not force and (now().hour != SLOT_HOUR or today in st["posted"] or any(k.startswith(today) and "test" not in k for k in st["posted"])):
+    slot = f"{today}_{now().hour:02d}"
+    if not force and (now().hour not in SLOT_HOURS or slot in st["posted"]):
         log("投稿枠ではないので作りません"); return 0
-    kind = ROTATION[now().toordinal() % len(ROTATION)]
+    kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     slides, question, tags = ask_claude(kind)
-    key = today if not force else f"{today}_test{now().strftime('%H%M')}"
+    key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
     for i, s in enumerate(slides, 1):
@@ -263,7 +264,7 @@ def publish(dry=False):
     if not p:
         log("pending なし"); return 0
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
-    if not dry and now().hour not in (SLOT_HOUR, SLOT_HOUR + 1):
+    if not dry and not any(now().hour in (h, h + 1) for h in SLOT_HOURS):
         log("投稿は22時台（遅れても23時台）だけ。pending は次の枠で投稿"); return 0
     if not dry:
         latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])
