@@ -231,12 +231,19 @@ def build(force=False):
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
+    # 通し番号（シリーズとして集めたくなるように）
+    no = sum(1 for k in st["posted"] if "test" not in k) + 1
+    label = {"sukatto": "スカッとする話", "shuraba": "修羅場の話", "donden": "どんでん返しの話", "unlucky": "ついてない話", "naki": "泣ける話"}[kind]
+    series = f"{label} No.{no}"
     for i, s in enumerate(slides, 1):
-        slide(s, None, kind).save(out / f"{i}.jpg", quality=90)
-    # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）
+        slide(s, series if i == 1 else None, kind).save(out / f"{i}.jpg", quality=90)
+    # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）＋フォローする理由（次の話が届く）
     closing = question + "\nコメントで教えてください。"
     slide(closing, "※この話はフィクションです", kind).save(out / f"{len(slides) + 1}.jpg", quality=90)
-    caption = (f"{slides[0]}\n\n{question} コメントで教えてね👇\n\n"
+    nxt = "今夜22時" if now().hour < 17 else "明日のお昼12時"
+    slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", "毎日12時と22時に1話ずつ", kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
+    caption = (f"【{series}】{slides[0]}\n\n{question} コメントで教えてね👇\n\n"
+               "毎日12時と22時に、1話ずつ更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
                "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
                + " ".join(dict.fromkeys(tags + ["#創作", "#短編", {"sukatto": "#スカッとする話", "shuraba": "#修羅場", "donden": "#どんでん返し", "unlucky": "#ついてない話", "naki": "#泣ける話"}[kind]])))
     (out / "caption.txt").write_text(caption, encoding="utf-8")
