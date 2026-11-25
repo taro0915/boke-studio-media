@@ -18,7 +18,8 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "taro0915/boke-studio-media")
 BRANCH = os.environ.get("GITHUB_REF_NAME", "main")
 RAW = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/studio/posts"
 API = "https://graph.facebook.com/v24.0"
-MAX_PER_DAY = 4          # 7:30 / 11:30 / 18:00 / 21:00
+MAX_PER_DAY = 2          # 7:30 / 18:00（2026-11-26から。話カルーセルが強いのでボケは2本に絞る）
+POST_HOURS = {7, 8, 18, 19}  # この時間帯の起動だけ投稿する（11:30・21:00の起動は見送る）
 MIN_GAP_SEC = 2 * 3600   # 前の投稿から2時間以上あける
 
 
@@ -80,6 +81,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
+    if not a.dry_run and now().hour not in POST_HOURS:
+        log("ボケは朝7:30と夕方18:00だけ。この時間は投稿しません。"); return 0
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"posted": {}}
     today = now().date().isoformat()
     # 深夜(0-6時)の投稿は1日の上限に数えない（不具合で深夜に出た分で夕方・夜の枠が止まらないように）
