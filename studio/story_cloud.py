@@ -32,12 +32,24 @@ SERIF = ["/usr/share/fonts/opentype/noto/NotoSerifCJK-Medium.ttc", "/usr/share/f
 
 # ジャンルは日替わりで回し、2週間後に数字の良いものへ寄せる
 KINDS = {
-    "sukatto": "スカッとする話。威張っている人（上司・義母・取引先・元夫・ママ友など）が、主人公を見下してきた自分の言葉や行動によって、人前で自滅する。主人公は声を荒げず、黙って積み上げてきた実力や準備で静かに返す。最後は第三者（社長・親族・客など）が判定を下し、相手が昔言った決め台詞がそのまま本人に返る一文で締める。手口は合法で現実的なものに限る（脅し・暴力・違法な仕返しは不可）",
+    "sukatto": "スカッとする話。威張っている人・ずるい人が、最後に自分のしたことの報いを受ける。主人公は声を荒げず、暴力・脅し・違法な仕返しはしない。現実にありそうな出来事だけで書く",
     "shuraba": "修羅場の話。結婚式・法事・同窓会・家族会議など人が集まる場で、隠されていた事実が明るみに出る",
     "donden": "どんでん返しの話。最後の1〜2枚で、1枚目の意味がまったく逆に見えるような真相が明かされる",
     "unlucky": "ついてない話。小さな不運が雪だるま式に重なり、最後は思わず笑うか、ちょっと救われるオチ",
     "naki": "じんわり泣ける話。不器用な家族（父・母・祖父母・夫婦）が、言葉にしなかった思いを最後に知る",
 }
+# スカッとの「返し方」。毎回ちがう型を使い、同じ構成が続かないようにする（2026-11-26 似た話が続いたため）
+TWISTS = [
+    "相手が自慢していたものが、実は主人公のおかげで成り立っていたと、本人の口からばれる",
+    "相手が主人公をはめようとした仕掛けに、相手自身が引っかかる",
+    "主人公は何もしない。相手が調子に乗って自分で墓穴を掘り、まわりが勝手に気づく",
+    "見下されていた主人公の『本当の立場』（店のオーナー、相手の親の恩人など）が、最後にさらっと明かされる",
+    "主人公が残しておいた記録（メモ、写真、領収書、録音など合法なもの）が、いちばんいい場面で効く",
+    "相手がいつも言っていたルールや口ぐせを、主人公がそのまま守っただけで相手が困る",
+    "子どもや店員など、相手が一番なめていた人の素直な一言で、場の空気がひっくり返る",
+    "主人公は仕返しをせず、相手を助ける。その結果、相手が一番恥ずかしい思いをする",
+]
+
 # スカッと系が一番伸びたので4分の3をスカッとにする（2026-11-25）。飽きないよう舞台は毎回変える
 ROTATION = ["sukatto", "sukatto", "donden", "sukatto", "sukatto", "naki", "sukatto", "sukatto"]
 
@@ -233,7 +245,7 @@ def _ask_once(kind, stage=None, extra=""):
         raise RuntimeError("話を作れませんでした")
     text = "\n\n".join(f"【下書き{i+1}】\n" + "\n".join(d["slides"]) for i, d in enumerate(drafts))
     # 仕上げ（選定・推敲・校正）は一番賢いOpusで行う
-    final = claude(f"基準：これまでで一番伸びた話の1枚目は「{HIT_SAMPLE}」（5.3万回・フォロー獲得）。これより弱い1枚目には厳しく点をつけること。\n\n" + CRITIC.format(n=len(drafts), drafts=text), max_tokens=24000, model="claude-opus-5-5")
+    final = claude(f"基準：これまでで一番伸びた話の1枚目は「{HIT_SAMPLE}」（5.3万回・フォロー獲得）。これより弱い1枚目には厳しく点をつけること（ただし内容や構成をまねた話は減点。似た話が続くと読者は飽きる）。\n\n" + CRITIC.format(n=len(drafts), drafts=text), max_tokens=24000, model="claude-opus-5-5")
     if final and ok([x.strip() for x in final.get("slides", []) if x.strip()]):
         log("採点:", final.get("scores"))
         src = final
@@ -256,6 +268,7 @@ HOOK = """あなたはInstagramの見出し職人です。次の話（1枚1文�
 - 「ありえない瞬間」「え、なんで？」と思わせる場面を、具体的な人と物で見せる
 - 35字以内、1文、小学5〜6年生でも読める言葉、絵文字なし
 - 今の1枚目より弱いなら、今の1枚目をそのまま選ぶ
+- 基準の文の言い回しや形（「〜が読み上げたのは、〜だった」）はまねしない
 候補を5つ書き、いちばん強い1つを選ぶ。
 【今の1枚目】{cur}
 【話の全体】
@@ -320,6 +333,17 @@ def sequel_extra(k, no):
             "【前作】\n" + "\n".join(orig))
 
 
+def recent_summary(st, n=6):
+    lines = []
+    for k in list(st["posted"])[-n:]:
+        try:
+            sl = json.loads((OUT / k / "story.json").read_text(encoding="utf-8"))["slides"]
+            lines.append("・" + sl[0] + " … " + sl[-1])
+        except Exception:
+            pass
+    return "\n".join(lines)
+
+
 def build(force=False):
     st = load_state()
     if st.get("pending"):
@@ -338,7 +362,15 @@ def build(force=False):
         kind, stage = hot[1]["kind"], None
         st["posted"][hot[0]]["sequel_done"] = True
         log(f"伸びている話 No.{sequel_of} の続編を作ります（{hot[3]:.0f}回/時）")
-    slides, question, tags = ask_claude(kind, stage, extra or "")
+    if not extra:
+        extra = ""
+        if kind == "sukatto":
+            extra += "。返し方の型は「" + TWISTS[len(st["posted"]) % len(TWISTS)] + "」。相手役は舞台に合った人物にする（会社以外の舞台で上司や部長を出さない）"
+        rec = recent_summary(st)
+        if rec:
+            extra += ("。\n最近出した話（1枚目…最後の1枚）は次のとおり。これらと舞台・相手役・仕返しの手口・決めゼリフの形が似た話は書かない。"
+                      "特に『部長が手柄を横取り→第三者が判定→口ぐせが返る』の形はもう使わない：\n" + rec)
+    slides, question, tags = ask_claude(kind, stage, extra)
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
