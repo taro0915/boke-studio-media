@@ -235,11 +235,39 @@ def _ask_once(kind, stage=None):
         log("編集が失敗したので下書き1を使う")
         src = drafts[0]
     slides = [x.strip() for x in src["slides"] if x.strip()]
+    slides[0] = sharpen_hook(slides)
     try:
         score = max(int(x) for x in (final or {}).get("scores") or [0])
     except Exception:
         score = 0
     return slides, src.get("question") or drafts[0].get("question", "あなたならどうする？"), (src.get("tags") or drafts[0].get("tags", []))[:6], score
+
+
+HOOK = """あなたはInstagramの見出し職人です。次の話（1枚1文のカルーセル）の1枚目だけを、もっと指が止まる1文にしたい。
+基準：これまでで一番伸びた1枚目は「{hit}」（5.3万回）。この強さ以上を目指す。
+条件：
+- 話の中身と矛盾しない（ネタばらしはしない。結末は書かない）
+- 「ありえない瞬間」「え、なんで？」と思わせる場面を、具体的な人と物で見せる
+- 35字以内、1文、小学5〜6年生でも読める言葉、絵文字なし
+- 今の1枚目より弱いなら、今の1枚目をそのまま選ぶ
+候補を5つ書き、いちばん強い1つを選ぶ。
+【今の1枚目】{cur}
+【話の全体】
+{body}
+JSONだけを返す: {{"candidates": [5個], "best": "選んだ1文"}}"""
+
+
+def sharpen_hook(slides):
+    """1枚目（つかみ）だけ専用に5案出して一番強いものに差し替える。失敗したら元のまま。"""
+    try:
+        r = claude(HOOK.format(hit=HIT_SAMPLE, cur=slides[0], body="\n".join(slides)), max_tokens=16000, model="claude-opus-5-5")
+        b = (r or {}).get("best", "").strip()
+        if b and len(b) <= 50:
+            log("つかみ:", slides[0], "→", b)
+            return b
+    except Exception as e:
+        log("つかみ調整に失敗:", e)
+    return slides[0]
 
 
 def build(force=False):
