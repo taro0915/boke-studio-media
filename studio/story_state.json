@@ -30,10 +30,13 @@
    "kind": "sukatto",
    "media_id": "17869945221675070",
    "permalink": "https://www.instagram.com/p/DgMSKgulTg5/"
+  },
+  "2026-11-26_test1820": {
+   "time": "2026-11-26T22:19:14+09:00",
+   "kind": "naki",
+   "media_id": "18020650325749020",
+   "permalink": "https://www.instagram.com/p/DgNMi-WlzuK/"
   }
  },
- "pending": {
-  "dir": "2026-11-26_test1820",
-  "kind": "naki"
- }
+ "pending": null
 }
