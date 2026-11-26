@@ -199,8 +199,25 @@ def ok(slides):
 STAGES = ["会社（上司・同僚）", "義母・義実家", "ママ友・PTA", "元夫・元妻", "ご近所・マンション", "お店（客と店員）", "親戚の集まり", "取引先・営業先"]
 
 
+MIN_SCORE = 40  # 50点満点。これ未満なら書き直す（2026-11-26 ボケ廃止で話一本に）
+HIT_SAMPLE = "部長が全社員の前で読み上げたのは、私が書いた部長自身の退職願だった。"  # 実績5.3万回・フォロー3
+
+
 def ask_claude(kind, stage=None):
-    """3本書く → 編集長役が採点して一番いい1本を選び、弱い文だけ直す。"""
+    """3本書く→採点→最高点が基準未満なら1回だけ書き直し、良い方を採る。"""
+    best = None
+    for attempt in range(2):
+        r = _ask_once(kind, stage)
+        sc = r[3]
+        log(f"試行{attempt+1}: 最高点 {sc}")
+        if best is None or sc > best[3]:
+            best = r
+        if sc >= MIN_SCORE:
+            break
+    return best[0], best[1], best[2]
+
+
+def _ask_once(kind, stage=None):
     drafts = []
     for _ in range(3):
         d = claude(PROMPT.format(kind=KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "")))
@@ -210,7 +227,7 @@ def ask_claude(kind, stage=None):
         raise RuntimeError("話を作れませんでした")
     text = "\n\n".join(f"【下書き{i+1}】\n" + "\n".join(d["slides"]) for i, d in enumerate(drafts))
     # 仕上げ（選定・推敲・校正）は一番賢いOpusで行う
-    final = claude(CRITIC.format(n=len(drafts), drafts=text), max_tokens=24000, model="claude-opus-5-5")
+    final = claude(f"基準：これまでで一番伸びた話の1枚目は「{HIT_SAMPLE}」（5.3万回・フォロー獲得）。これより弱い1枚目には厳しく点をつけること。\n\n" + CRITIC.format(n=len(drafts), drafts=text), max_tokens=24000, model="claude-opus-5-5")
     if final and ok([x.strip() for x in final.get("slides", []) if x.strip()]):
         log("採点:", final.get("scores"))
         src = final
@@ -218,7 +235,11 @@ def ask_claude(kind, stage=None):
         log("編集が失敗したので下書き1を使う")
         src = drafts[0]
     slides = [x.strip() for x in src["slides"] if x.strip()]
-    return slides, src.get("question") or drafts[0].get("question", "あなたならどうする？"), (src.get("tags") or drafts[0].get("tags", []))[:6]
+    try:
+        score = max(int(x) for x in (final or {}).get("scores") or [0])
+    except Exception:
+        score = 0
+    return slides, src.get("question") or drafts[0].get("question", "あなたならどうする？"), (src.get("tags") or drafts[0].get("tags", []))[:6], score
 
 
 def build(force=False):
