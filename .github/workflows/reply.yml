@@ -68,7 +68,10 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-        run: python studio/story_cloud.py publish ${{ inputs.story_force && '--dry-run' || '' }}
+        run: |
+          # テスト（story_force）のときは投稿の下準備も作らない（11/26 Metaに機械的と見られたため）
+          if [ "${{ inputs.story_force }}" = "true" ]; then echo "テスト作成のみ。投稿処理はしません"; exit 0; fi
+          python studio/story_cloud.py publish
       - name: story save state
         if: always()
         run: |
