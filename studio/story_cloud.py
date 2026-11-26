@@ -209,11 +209,11 @@ MIN_SCORE = 48  # 60点満点（6軸）。これ未満なら書き直す（2026-
 HIT_SAMPLE = "部長が全社員の前で読み上げたのは、私が書いた部長自身の退職願だった。"  # 実績5.3万回・フォロー3
 
 
-def ask_claude(kind, stage=None):
+def ask_claude(kind, stage=None, extra=""):
     """3本書く→採点→最高点が基準未満なら1回だけ書き直し、良い方を採る。"""
     best = None
     for attempt in range(2):
-        r = _ask_once(kind, stage)
+        r = _ask_once(kind, stage, extra)
         sc = r[3]
         log(f"試行{attempt+1}: 最高点 {sc}")
         if best is None or sc > best[3]:
@@ -223,10 +223,10 @@ def ask_claude(kind, stage=None):
     return best[0], best[1], best[2]
 
 
-def _ask_once(kind, stage=None):
+def _ask_once(kind, stage=None, extra=""):
     drafts = []
     for _ in range(3):
-        d = claude(PROMPT.format(kind=KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "")))
+        d = claude(PROMPT.format(kind=KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "") + extra))
         if d and ok([x.strip() for x in d.get("slides", []) if x.strip()]):
             drafts.append(d)
     if not drafts:
@@ -276,6 +276,50 @@ def sharpen_hook(slides):
     return slides[0]
 
 
+# ---- 伸び始めた話を早めに見つけて、次の枠で続編を出す（10万回を待たない） ----
+HOT_MIN_VIEWS = 10000      # 最低これだけ見られている
+HOT_PER_HOUR = 1500        # 1時間あたりの伸び（部長の話は約2,700回/時、ふつうの話は500〜600回/時）
+HOT_WINDOW_H = (4, 36)     # 投稿から4〜36時間の話だけを見る
+
+
+def find_hot(st):
+    tok, uid = os.environ.get("IG_ACCESS_TOKEN"), os.environ.get("IG_USER_ID")
+    if not tok:
+        return None
+    best = None
+    for i, (k, v) in enumerate(st["posted"].items(), 1):
+        if v.get("sequel_done") or not v.get("media_id"):
+            continue
+        try:
+            age = (now() - datetime.datetime.fromisoformat(v["time"])).total_seconds() / 3600
+        except Exception:
+            continue
+        if not (HOT_WINDOW_H[0] <= age <= HOT_WINDOW_H[1]):
+            continue
+        try:
+            d = api("GET", f"{v['media_id']}/insights", tok, metric="views")
+            views = int(d["data"][0]["values"][0]["value"])
+        except Exception as e:
+            log("閲覧数を取れず:", k, e); continue
+        pace = views / max(age, 1)
+        log(f"伸び確認: {k} {views}回 / {age:.1f}時間 = {pace:.0f}回/時")
+        if views >= HOT_MIN_VIEWS and pace >= HOT_PER_HOUR and (best is None or pace > best[3]):
+            best = (k, v, i, pace)
+    return best
+
+
+def sequel_extra(k, no):
+    try:
+        orig = json.loads((OUT / k / "story.json").read_text(encoding="utf-8"))["slides"]
+    except Exception:
+        return None
+    return ("。\n今回は大好評だった前作（No." + str(no) + "）の続編。同じ登場人物（役割の呼び名も同じ）の『その後』を書く。\n"
+            "前作を読んでいない人にも分かるように、2〜3枚目で前作のあらすじを1〜2文だけ入れる。\n"
+            "1枚目は前作を知らなくても指が止まる『ありえない瞬間』にする（『続編です』とは書かない）。\n"
+            "前作よりさらに大きな意外とスカッとを用意する。前作の決めゼリフを最後に1回だけ効かせてよい。\n"
+            "【前作】\n" + "\n".join(orig))
+
+
 def build(force=False):
     st = load_state()
     if st.get("pending"):
@@ -286,14 +330,22 @@ def build(force=False):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None
-    slides, question, tags = ask_claude(kind, stage)
+    sequel_of = None
+    hot = None if force else find_hot(st)
+    extra = sequel_extra(hot[0], hot[2]) if hot else None
+    if hot and extra:
+        sequel_of = hot[2]
+        kind, stage = hot[1]["kind"], None
+        st["posted"][hot[0]]["sequel_done"] = True
+        log(f"伸びている話 No.{sequel_of} の続編を作ります（{hot[3]:.0f}回/時）")
+    slides, question, tags = ask_claude(kind, stage, extra or "")
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
     out.mkdir(parents=True, exist_ok=True)
     # 通し番号（シリーズとして集めたくなるように）
     no = len(st["posted"]) + 1
     label = {"sukatto": "スカッとする話", "shuraba": "修羅場の話", "donden": "どんでん返しの話", "unlucky": "ついてない話", "naki": "泣ける話"}[kind]
-    series = f"{label} No.{no}"
+    series = f"{label} No.{no}" + (f"（No.{sequel_of}の続き）" if sequel_of else "")
     for i, s in enumerate(slides, 1):
         slide(s, series if i == 1 else None, kind).save(out / f"{i}.jpg", quality=90)
     # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）＋フォローする理由（次の話が届く）
@@ -305,8 +357,8 @@ def build(force=False):
     when = "毎日7時・12時・22時に1話ずつ" if three else "毎日12時と22時に1話ずつ"
     slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", when, kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
     caption = (f"【{series}】{slides[0]}\n\n{question} コメントで教えてね👇\n\n思い当たる人がいたら、紙ひこうきのマークでこの話を送ってみてください✈️\n\n"
-               f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
-               "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
+               + (f"前のお話（No.{sequel_of}）は、プロフィールから読めます📌\n\n" if sequel_of else "") + f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
+               + "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
                + " ".join(dict.fromkeys(tags + ["#創作", "#短編", {"sukatto": "#スカッとする話", "shuraba": "#修羅場", "donden": "#どんでん返し", "unlucky": "#ついてない話", "naki": "#泣ける話"}[kind]])))
     (out / "caption.txt").write_text(caption, encoding="utf-8")
     (out / "story.json").write_text(json.dumps({"kind": kind, "slides": slides}, ensure_ascii=False, indent=1), encoding="utf-8")

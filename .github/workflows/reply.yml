@@ -49,6 +49,8 @@ jobs:
         if: always()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
           h=$(TZ=Asia/Tokyo date +%H)
           d=$(TZ=Asia/Tokyo date +%F); morning=no; [ "$h" = "07" ] && [ "$d" \> "2026-12-01" ] && morning=yes
