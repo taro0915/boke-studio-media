@@ -25,7 +25,7 @@ THREE_FROM = "2026-12-02"  # この日から朝7時台（通勤電車）を足�
 
 def slot_hours():
     return [7, 12, 22] if now().date().isoformat() >= THREE_FROM else SLOT_HOURS
-MIN_GAP_SEC = 3600
+MIN_GAP_SEC = 4 * 3600  # 前の話から4時間あける（11/26 遅れて動いた回で90分後にもう1本出たため）
 W, H = 1080, 1350
 BG, FG, SUB = (43, 43, 43), (236, 233, 226), (150, 147, 140)
 SERIF = ["/usr/share/fonts/opentype/noto/NotoSerifCJK-Medium.ttc", "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc"]
