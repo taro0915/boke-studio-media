@@ -75,6 +75,11 @@ PROMPT = """あなたはInstagramで何十万回も読まれる「1枚1文の実
   ・だれが何をしたかを毎回はっきり書く。「彼」「それ」など、指すものがわかりにくい言葉は避ける。
   ・登場人物は「私」「部長」「義母」「夫」のように役割で呼ぶ。名前は付けない。
   ・セリフは「」で短く。1枚に出来事は1つだけ。
+- いちばん大事：初めて読む人が一度で話をわかること。
+  ・時間は前から順に進める。時間を戻すのは「1枚目のひっかけ → 2枚目で『その○日前。』と戻る」の1回だけ。それ以外の回想は使わない。
+  ・登場人物は3人まで（私＋相手役＋判定する人）。
+  ・なぜ相手が負けたのか、仕組みを読者がはっきりわかるように、決め手の1枚の前後で「何が・なぜ効いたか」を1文で書く。ほのめかしや、わかる人だけわかるオチは禁止。
+  ・最後の一言は、前に出てきた言葉をそのまま使い、読者がすぐ「あの言葉だ」とわかるようにする。
 - 構成: 1枚目のひっかけ → 状況説明(2〜3枚) → 1回目の小さな意外 → 盛り上がり → 2回目の大きな意外 → 最後の一撃。中だるみの説明文は入れない。
 - 最後の2〜3枚が一番大事（読者はここで「いいね」を押す）。読後に胸がざわつく・スカッとする・泣ける・吹き出す、のどれかを必ず起こす。
 - 読者が「自分ならこうする」「これはひどい」と意見を言いたくなる、白黒つけにくい要素を1つ入れる（コメントを生むため）。
@@ -235,10 +240,73 @@ def ask_claude(kind, stage=None, extra=""):
     return best[0], best[1], best[2]
 
 
+LOGLINES = """あなたはヒット連発の短編ドラマの企画担当です。日本の30〜60代がスマホで読む「1枚1文」の話の企画を出してください。
+ジャンル: {kind}
+条件: 一行あらすじ（60字以内）を20個。どれも「誰が・誰に・何をされて・どうやって・どうなる」が一文でわかること。
+- 生活の『あるある』（家事、職場、義実家、近所、店、学校行事など）に根ざし、読者の半分以上が『いる、こういう人』と思えること
+- 決め手になる具体的な『物』か『一言』を必ず入れる（領収書、回覧板、LINEの既読、ハンコ、レシート、席順表 など）
+- 複雑な仕掛けや専門知識が必要なものは不可。説明なしで小学生でもわかる仕組みだけ
+JSONだけを返す: {{"loglines": [20個]}}"""
+
+PICK = """次の一行あらすじ20個から、Instagramで一番読まれ・友だちに送られそうなものを厳しく3つ選んでください。
+基準: ①一読でわかる ②『いる、こういう人』と思える ③オチの仕組みがシンプルで気持ちいい ④最近の話と似ていない
+最近出した話:
+{recent}
+【候補】
+{cands}
+JSONだけを返す: {{"picks": ["選んだあらすじ1", "2", "3"]}}"""
+
+READER = """あなたは初めてこの話を読む、ふつうの50代の読者です。スマホで1枚ずつ読みました。
+【話】
+{body}
+質問: ①3行で、何が起きたか要約して。 ②相手はなぜ負けた（または、なぜその結末になった）の？ ③わかりにくかった枚数（番号）と理由。なければ空。
+JSONだけを返す: {{"summary": "...", "why": "...", "unclear": [{{"no": 番号, "reason": "..."}}], "understood": true/false}}"""
+
+FIX = """次の話は、読者に『わかりにくい』と言われました。指摘された所だけを直して、一度で誰でもわかる話にしてください。
+話の流れ・つかみ（1枚目）・オチは変えない。1枚1文・35字以内・枚数は13〜17枚。時間は前から順に。
+【読者の指摘】
+{notes}
+【話】
+{body}
+JSONだけを返す: {{"slides": [...]}}"""
+
+
+def pick_loglines(kind_text, recent):
+    r = claude(LOGLINES.format(kind=kind_text))
+    cands = (r or {}).get("loglines") or []
+    if len(cands) < 5:
+        return []
+    p = claude(PICK.format(recent=recent or "（なし）", cands="\n".join(f"- {c}" for c in cands)), max_tokens=16000, model="claude-opus-5-5")
+    picks = (p or {}).get("picks") or []
+    log("企画:", picks)
+    return picks[:3]
+
+
+def reader_check(slides):
+    """別のAIに『初めての読者』として読ませ、わからない所があれば直す（最大2回）。"""
+    for _ in range(2):
+        body = "\n".join(f"{i}. {x}" for i, x in enumerate(slides, 1))
+        r = claude(READER.format(body=body))
+        if not r:
+            return slides
+        log("読者テスト:", r.get("summary", "")[:80], "| わかりにくい:", r.get("unclear"))
+        if r.get("understood") and not r.get("unclear"):
+            return slides
+        f = claude(FIX.format(notes=json.dumps(r, ensure_ascii=False), body=body), max_tokens=24000, model="claude-opus-5-5")
+        new = [x.strip() for x in (f or {}).get("slides", []) if x.strip()]
+        if not new or not ok(new):
+            return slides
+        slides = new
+    return slides
+
+
 def _ask_once(kind, stage=None, extra=""):
     drafts = []
-    for _ in range(3):
-        d = claude(PROMPT.format(kind=KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "") + extra))
+    base = KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "")
+    picks = [] if "続編" in extra else pick_loglines(base, extra)
+    for i in range(3):
+        idea = f"。\nこの企画で書く：「{picks[i]}」" if i < len(picks) else ""
+        d = claude(PROMPT.format(kind=base + extra + idea))
         if d and ok([x.strip() for x in d.get("slides", []) if x.strip()]):
             drafts.append(d)
     if not drafts:
@@ -254,6 +322,7 @@ def _ask_once(kind, stage=None, extra=""):
         src = drafts[0]
     slides = [x.strip() for x in src["slides"] if x.strip()]
     slides[0] = sharpen_hook(slides)
+    slides = reader_check(slides)
     try:
         score = max(int(x) for x in (final or {}).get("scores") or [0])
     except Exception:
