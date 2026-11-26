@@ -439,7 +439,7 @@ def build(force=False):
         rec = recent_summary(st)
         if rec:
             extra += ("。\n最近出した話（1枚目…最後の1枚）は次のとおり。これらと舞台・相手役・仕返しの手口・決めゼリフの形が似た話は書かない。"
-                      "特に『部長が手柄を横取り→第三者が判定→口ぐせが返る』の形はもう使わない：\n" + rec)
+                      "ただし『職場で手柄を取られた主人公が最後に見返す』型は一番読まれているので、舞台・決め手・セリフを変えれば使ってよい：\n" + rec)
     slides, question, tags = ask_claude(kind, stage, extra)
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
