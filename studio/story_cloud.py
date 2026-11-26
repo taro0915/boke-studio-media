@@ -419,7 +419,8 @@ def build(force=False):
         log("未投稿の pending あり"); return 0
     today = now().date().isoformat()
     slot = f"{today}_{now().hour:02d}"
-    if not force and (now().hour not in slot_hours() or slot in st["posted"]):
+    # 投稿の1時間前に作っておく（作成に約10分かかり、投稿が遅れるため。2026-11-26）
+    if not force and (now().hour + 1 not in slot_hours() or slot in st["posted"]):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None

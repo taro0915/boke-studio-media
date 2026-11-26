@@ -53,8 +53,9 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
           h=$(TZ=Asia/Tokyo date +%H)
-          d=$(TZ=Asia/Tokyo date +%F); morning=no; [ "$h" = "07" ] && [ "$d" \> "2026-12-01" ] && morning=yes
-          if [ "$h" = "12" ] || [ "$h" = "22" ] || [ "$morning" = "yes" ] || [ "${{ inputs.story_force }}" = "true" ]; then
+          d=$(TZ=Asia/Tokyo date +%F); morning=no; [ "$h" = "06" ] && [ "$d" \> "2026-12-01" ] && morning=yes
+          # 投稿の1時間前（11時・21時、12/2からは6時も）に作っておく
+          if [ "$h" = "11" ] || [ "$h" = "21" ] || [ "$morning" = "yes" ] || [ "${{ inputs.story_force }}" = "true" ]; then
             sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
             python studio/story_cloud.py build ${{ inputs.story_force && '--force' || '' }}
           fi
