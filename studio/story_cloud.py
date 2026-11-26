@@ -20,6 +20,11 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "taro0915/boke-studio-media")
 RAW = f"https://raw.githubusercontent.com/{REPO}/main/studio/stories"
 API = "https://graph.facebook.com/v24.0"
 SLOT_HOURS = [12, 22]  # 昼休みと寝る前（話カルーセルはボケの約3倍読まれるため1日2本）
+THREE_FROM = "2026-12-02"  # この日から朝7時台（通勤電車）を足して1日3本
+
+
+def slot_hours():
+    return [7, 12, 22] if now().date().isoformat() >= THREE_FROM else SLOT_HOURS
 MIN_GAP_SEC = 3600
 W, H = 1080, 1350
 BG, FG, SUB = (43, 43, 43), (236, 233, 226), (150, 147, 140)
@@ -277,7 +282,7 @@ def build(force=False):
         log("未投稿の pending あり"); return 0
     today = now().date().isoformat()
     slot = f"{today}_{now().hour:02d}"
-    if not force and (now().hour not in SLOT_HOURS or slot in st["posted"]):
+    if not force and (now().hour not in slot_hours() or slot in st["posted"]):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None
@@ -294,10 +299,13 @@ def build(force=False):
     # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）＋フォローする理由（次の話が届く）
     closing = question + "\nコメントで教えてください。\n\n身近に「こういう人」がいたら、\nこの話をそっと送ってあげてください。"
     slide(closing, "※この話はフィクションです", kind).save(out / f"{len(slides) + 1}.jpg", quality=90)
-    nxt = "今夜22時" if now().hour < 17 else "明日のお昼12時"
-    slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", "毎日12時と22時に1話ずつ", kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
+    three = 7 in slot_hours()
+    h = now().hour
+    nxt = "今日のお昼12時" if h < 10 else ("今夜22時" if h < 17 else ("明日の朝7時" if three else "明日のお昼12時"))
+    when = "毎日7時・12時・22時に1話ずつ" if three else "毎日12時と22時に1話ずつ"
+    slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", when, kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
     caption = (f"【{series}】{slides[0]}\n\n{question} コメントで教えてね👇\n\n思い当たる人がいたら、紙ひこうきのマークでこの話を送ってみてください✈️\n\n"
-               "毎日12時と22時に、1話ずつ更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
+               f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
                "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
                + " ".join(dict.fromkeys(tags + ["#創作", "#短編", {"sukatto": "#スカッとする話", "shuraba": "#修羅場", "donden": "#どんでん返し", "unlucky": "#ついてない話", "naki": "#泣ける話"}[kind]])))
     (out / "caption.txt").write_text(caption, encoding="utf-8")
@@ -334,7 +342,7 @@ def publish(dry=False):
     if not p:
         log("pending なし"); return 0
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
-    if not dry and not any(now().hour in (h, h + 1) for h in SLOT_HOURS):
+    if not dry and not any(now().hour in (h, h + 1) for h in slot_hours()):
         log("投稿は22時台（遅れても23時台）だけ。pending は次の枠で投稿"); return 0
     if not dry:
         latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])

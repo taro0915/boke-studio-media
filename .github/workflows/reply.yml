@@ -51,7 +51,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           h=$(TZ=Asia/Tokyo date +%H)
-          if [ "$h" = "12" ] || [ "$h" = "22" ] || [ "${{ inputs.story_force }}" = "true" ]; then
+          d=$(TZ=Asia/Tokyo date +%F); morning=no; [ "$h" = "07" ] && [ "$d" \> "2026-12-01" ] && morning=yes
+          if [ "$h" = "12" ] || [ "$h" = "22" ] || [ "$morning" = "yes" ] || [ "${{ inputs.story_force }}" = "true" ]; then
             sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
             python studio/story_cloud.py build ${{ inputs.story_force && '--force' || '' }}
           fi
