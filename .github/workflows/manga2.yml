@@ -1,0 +1,39 @@
+name: manga2
+# 1枚1場面の「絵つきの話」の試作（投稿はしない。本人の確認用）2026-11-27
+on:
+  workflow_dispatch:
+    inputs:
+      story:
+        description: "元にする話のフォルダ名（studio/stories/ の下）"
+        default: "2026-11-26_12"
+      model:
+        description: "画像モデル（空ならflux-2-dev→klein-9b→klein-4bの順に試す）"
+        default: ""
+permissions:
+  contents: write
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          pip install requests pillow budoux
+      - name: make
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          MANGA_MODEL: ${{ inputs.model }}
+        run: python studio/manga2/make.py "${{ inputs.story }}"
+      - name: save
+        if: always()
+        run: |
+          git config user.name "boke-studio-bot"
+          git config user.email "boke-studio-bot@users.noreply.github.com"
+          git add studio/manga2/out/*/*.jpg studio/manga2/out/*/*.json studio/manga2/out/*/char_*.png 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "manga2 試作" && git pull --rebase && git push)
