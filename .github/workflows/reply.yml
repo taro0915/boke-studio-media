@@ -13,6 +13,10 @@ on:
         description: "日本語の話カルーセルを時刻に関係なく1本作る（投稿はテストのみ）"
         type: boolean
         default: false
+      cleanup_check:
+        description: "古い投稿の削除：許可と対象の確認だけ（削除しない）"
+        type: boolean
+        default: false
 concurrency:
   group: boke-state
   cancel-in-progress: false
@@ -80,3 +84,16 @@ jobs:
         run: |
           git add studio/story_state.json 2>/dev/null || true
           git diff --cached --quiet || (git commit -m "story posted" && git pull --rebase && git push)
+      # 11/19より前の古い投稿を、毎日15時台に古い順で10件ずつ削除（2026-11-27 本人の依頼）
+      - name: cleanup old posts
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: |
+          h=$(TZ=Asia/Tokyo date +%H)
+          if [ "${{ inputs.cleanup_check }}" = "true" ]; then python studio/cleanup_old.py --check
+          elif [ "$h" = "15" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then python studio/cleanup_old.py
+          else echo "削除は15時台だけ"; fi
+          git add studio/reports/deleted.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "cleanup log" && git pull --rebase && git push)
