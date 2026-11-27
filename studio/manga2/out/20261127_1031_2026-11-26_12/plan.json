@@ -1,0 +1,142 @@
+{
+ "characters": [
+  {
+   "id": "a",
+   "role_ja": "私（小学生の息子をもつ母親）",
+   "visual_en": "Japanese woman, 38 years old, slim average height. Straight dark brown hair, shoulder length, always tied in a low ponytail at the nape with a black hair tie, no bangs. No glasses. Always wears a mustard-yellow crew-neck knit sweater with slightly long sleeves, dark navy wide-leg ankle pants, and white canvas sneakers (gray slippers when indoors). Small silver stud earrings. Calm oval face, thin eyebrows."
+  },
+  {
+   "id": "b",
+   "role_ja": "下の階の男性（元理事長）",
+   "visual_en": "Japanese man, 72 years old, short and stocky with a round belly. Very short white crew-cut hair, thick gray eyebrows, deep frown lines, square jaw. No glasses. Always wears a maroon button-up wool cardigan over a beige polo shirt, dark brown slacks, and brown leather sandals. Loud, stern expression by default, mouth often wide open when shouting."
+  },
+  {
+   "id": "c",
+   "role_ja": "今の理事長",
+   "visual_en": "Japanese man, 52 years old, tall and slim. Short neat black hair with a side part on the left, a few gray strands at the temples. Thin rimless rectangular glasses. Always wears a navy blazer over a light blue collared shirt, no tie, charcoal gray trousers, black leather shoes. Calm, composed face, slight polite smile."
+  }
+ ],
+ "props": [
+  {
+   "name": "折れたほうき",
+   "visual_en": "A long household broom about 130 cm long with a light-brown plain wooden handle and a faded green plastic bristle head. The wooden handle is snapped cleanly in two in the middle, with jagged splintered ends. Man b holds both broken pieces bundled together in his LEFT hand. No text or logo anywhere on it."
+  },
+  {
+   "name": "請求書",
+   "visual_en": "A single sheet of plain white A5 paper, folded once then opened. The paper must look completely blank: no letters, no numbers, no lines drawn on it. Man b holds it in his RIGHT hand in scene 1; current chairperson c holds it in his RIGHT hand in the final scene."
+  },
+  {
+   "name": "録音機",
+   "visual_en": "A small matte black handheld voice recorder about the size of a candy bar (10 cm long), with a tiny round red light on top and a small silver speaker grille. No screen text, no numbers, no logo. Woman a holds it in her RIGHT hand."
+  },
+  {
+   "name": "手帳",
+   "visual_en": "A small red hardcover pocket notebook (palm-sized, 9 x 14 cm) with a black elastic band. Pages shown only as blank cream paper or faint scribble lines with no readable letters or numbers. Woman a holds it in her LEFT hand and a black ballpoint pen in her RIGHT hand."
+  },
+  {
+   "name": "厚いマット",
+   "visual_en": "A thick soft gray foam floor mat, about 3 cm thick, made of large square interlocking tiles, covering a living room floor. Plain, no patterns, no text."
+  },
+  {
+   "name": "うるさい日の表",
+   "visual_en": "Stacks of plain white A4 printed handouts. Shown from a distance so they look like plain white paper with only faint gray grid lines; no readable letters or numbers. Man b holds a stack in his LEFT hand and passes sheets out with his RIGHT hand."
+  },
+  {
+   "name": "マットのレシート",
+   "visual_en": "A long narrow white paper receipt about 25 cm long, slightly curled. Looks blank, with no readable printed letters or numbers. Woman a holds it out in her RIGHT hand."
+  }
+ ],
+ "scenes": [
+  {
+   "caption": "下の階の男性が「十日に折れた」ほうき代1,980円を請求してきた。",
+   "scene_en": "At the open front door of a Japanese apartment (plain beige walls, no nameplate text), man b stands in the hallway outside, glaring with a red angry face, mouth wide open as if shouting. He holds the snapped wooden broom in two pieces in his LEFT hand and thrusts the blank white invoice paper forward with his RIGHT hand toward woman a. Woman a stands just inside the doorway in gray slippers, eyes wide, mouth slightly open in disbelief, both hands raised slightly in shock. The invoice paper is completely blank with no writing. Medium shot from the side, showing both people and the broken broom clearly.",
+   "chars": [
+    "a",
+    "b"
+   ],
+   "shot": "medium"
+  },
+  {
+   "caption": "元理事長の彼は、半年前から夜になると天井をドンドン突いていた。",
+   "scene_en": "Night, inside man b's dim apartment living room lit by one warm ceiling lamp. Man b stands on the floor with a stern frown, both hands gripping the unbroken light-brown wooden broom handle (green bristle head down near his feet) and jabbing the handle end hard upward against the white ceiling. Small impact lines around the spot where the handle hits the ceiling. Dark window behind him with no reflections or text. Medium shot from a low angle looking up.",
+   "chars": [
+    "b"
+   ],
+   "shot": "medium"
+  },
+  {
+   "caption": "息子の足音は響いていた。だから厚いマットを敷き、夜九時から走らせないと決めた。",
+   "scene_en": "Daytime in woman a's bright apartment living room. Woman a kneels on the floor, pressing a thick gray interlocking foam mat tile into place with both hands, a determined, slightly apologetic expression. Most of the floor is already covered with the gray mats. A small child's pair of blue sneakers sits neatly by the wall (no child shown). No clocks, no posters, no text anywhere. Wide shot showing the whole room covered in mats.",
+   "chars": [
+    "a"
+   ],
+   "shot": "wide"
+  },
+  {
+   "caption": "それでも彼は「毎晩、夜中まで走っている」と言い続けた。",
+   "scene_en": "Apartment building hallway with plain gray walls and plain doors with no numbers or nameplates. Man b points his RIGHT index finger sharply at woman a, mouth wide open shouting, veins on his forehead, his LEFT hand clenched into a fist at his side. Woman a stands with her back slightly hunched, both hands clasped in front of her, troubled and tired expression, eyebrows drawn together. Medium shot from the side.",
+   "chars": [
+    "a",
+    "b"
+   ],
+   "shot": "medium"
+  },
+  {
+   "caption": "私はその日から、音の時刻を手帳に書き、部屋で録音も始めた。",
+   "scene_en": "Night in woman a's living room, warm lamp light. Woman a sits at a small wooden table, serious focused face, writing in the small red pocket notebook held open in her LEFT hand with a black ballpoint pen in her RIGHT hand. The notebook pages show only faint unreadable scribbles, no letters or numbers. On a low shelf beside her sits the small matte black voice recorder with its tiny red light glowing. Close-up framing her face, hands, notebook, and the recorder in the background.",
+   "chars": [
+    "a"
+   ],
+   "shot": "close-up"
+  },
+  {
+   "caption": "ひと月後の総会で、彼は三十日すべてに「夜中まで走る」と書いた表を配った。",
+   "scene_en": "Apartment residents' meeting room with long folding tables and rows of folding chairs, plain walls, a plain blank whiteboard with nothing written on it. Man b stands at the front with a triumphant smug grin, holding a stack of plain white handouts in his LEFT hand and passing a sheet out with his RIGHT hand. The handouts look like plain white paper with faint gray grid lines only, no readable text. Woman a sits in the front row looking down at a sheet on the table with a stunned face. Man c sits at the head table on the side, glasses on, calm and attentive. Other residents are shown only as faceless blurred silhouettes in the back. Wide shot.",
+   "chars": [
+    "a",
+    "b",
+    "c"
+   ],
+   "shot": "wide"
+  },
+  {
+   "caption": "私は頭を下げてレシートを見せ「八日から七日間は実家にいました」と言った。",
+   "scene_en": "Same meeting room. Woman a stands beside her chair, bowing her head slightly and politely, holding out the long white receipt in her RIGHT hand toward the head table. Her face is calm but firm, mouth open as she speaks. The receipt looks blank with no readable text. Man c at the head table looks at a plain white form in his LEFT hand (blank paper, no text) and nods. Man b in the background stops smiling, eyebrows raised in surprise. Medium shot centered on woman a.",
+   "chars": [
+    "a",
+    "b",
+    "c"
+   ],
+   "shot": "medium"
+  },
+  {
+   "caption": "留守の間も、部屋の録音機は回したままだった。十日の夜を再生した。",
+   "scene_en": "Close view of the meeting table surface. Woman a's RIGHT hand places the small matte black voice recorder in the center of the table, her thumb pressing its play button; the tiny red light is glowing. Her LEFT hand rests flat on the closed small red notebook beside it. In the blurred background, the faces of man b (frowning, leaning forward) and man c (glasses, attentive) look down at the recorder. No screens or text on the recorder. Close-up shot.",
+   "chars": [
+    "a",
+    "b",
+    "c"
+   ],
+   "shot": "close-up"
+  },
+  {
+   "caption": "床から「ドン、ドン、バキッ」。だれもいない部屋を突いていたのだ。",
+   "scene_en": "Meeting room, the black voice recorder on the table in the foreground with visible sound-wave lines (drawn as plain curved lines, no letters) coming from its speaker. Man b stands frozen behind it, face gone pale, eyes wide, mouth hanging open, sweat drops on his forehead, both hands empty and trembling at his sides. Woman a sits calmly to one side with her hands folded on the table. Blurred residents in the background turn their heads toward man b in shock. Medium shot focused on man b's face.",
+   "chars": [
+    "a",
+    "b"
+   ],
+   "shot": "medium"
+  },
+  {
+   "caption": "今の理事長は「その請求書、宛名はご自分ですね」と返した。",
+   "scene_en": "Meeting room. Man c stands calmly with a polite, cool smile, his rimless glasses glinting, holding out the blank white invoice paper in his RIGHT hand toward man b. The paper is completely blank with no writing. Man b, red-faced and speechless, stares at the paper with his LEFT hand half raised, unable to take it. Woman a stands slightly behind man c, quietly relieved, hands clasped in front of her. Medium shot showing all three, with man c and the invoice in the center.",
+   "chars": [
+    "a",
+    "b",
+    "c"
+   ],
+   "shot": "medium"
+  }
+ ]
+}
