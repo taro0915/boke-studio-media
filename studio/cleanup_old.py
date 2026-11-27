@@ -23,6 +23,8 @@ def main():
         perms = requests.get(f"{API}/me/permissions", params={"access_token": tok}, timeout=60).json().get("data", [])
         granted = sorted(p["permission"] for p in perms if p.get("status") == "granted")
         log("許可:", ", ".join(granted))
+        if not a.check and "instagram_manage_contents" not in granted:
+            log("削除に必要な許可（instagram_manage_contents）がないので何もしません。トークンの取り直しが必要"); return 0
     except Exception as e:
         log("許可の確認に失敗:", e)
     items, url, params = [], f"{API}/{uid}/media", {"fields": "id,timestamp,caption,media_type", "limit": 100, "access_token": tok}
