@@ -208,6 +208,7 @@ JSONだけを返す: {{"scores": [各下書きの合計点], "slides": [...], "q
 
 
 def claude(prompt, max_tokens=16000, model="claude-sonnet-5-5"):
+    max_tokens = max(max_tokens, 32000)  # 考える分で上限に達して本文が空になるのを防ぐ（11/27 再試行が多発）
     body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
     for _ in range(3):
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=300, json=body,
@@ -220,7 +221,11 @@ def claude(prompt, max_tokens=16000, model="claude-sonnet-5-5"):
                     return json.loads(m.group(0))
                 except json.JSONDecodeError:
                     pass
-        log("応答が不正、再試行", r.status_code, r.text[:200])
+        try:
+            j = r.json(); why = f"stop={j.get('stop_reason')} out={j.get('usage', {}).get('output_tokens')}"
+        except Exception:
+            why = r.text[:200]
+        log("応答が不正、再試行", r.status_code, why)
         time.sleep(5)
     return None
 
