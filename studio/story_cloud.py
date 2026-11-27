@@ -454,7 +454,8 @@ def build(force=False):
             zen_key = next((k for k, v in st["posted"].items() if k.startswith(today) and v.get("part") == "前編"), None)
             part = "後編" if zen_key else None
     sequel_of = None
-    hot = None if (force or part) else find_hot(st)
+    # 自動の続編は停止（2026-11-28 データ：続編1本目は元の話の約半分、続編の続編は9時間で2,767回。同じ人物の使い回しで飽きられた）
+    hot = None
     extra = sequel_extra(hot[0], hot[2]) if hot else None
     if hot and extra:
         sequel_of = hot[2]
@@ -481,7 +482,7 @@ def build(force=False):
         rec = recent_summary(st)
         if rec:
             extra += ("。\n最近出した話（1枚目…最後の1枚）は次のとおり。これらと舞台・相手役・仕返しの手口・決めゼリフの形が似た話は書かない。"
-                      "ただし『職場で手柄を取られた主人公が最後に見返す』型は一番読まれているので、舞台・決め手・セリフを変えれば使ってよい：\n" + rec)
+                      "ただし『職場で手柄を取られた主人公が最後に見返す』型は一番読まれているので、舞台・決め手・セリフを変えれば使ってよい。ただし相手役の肩書き（部長・理事長・義母など）は、最近の話で使ったものと同じにしない：\n" + rec)
     slides, question, tags = ask_claude(kind, stage, extra)
     key = slot if not force else f"{today}_test{now().strftime('%H%M')}"
     out = OUT / key
