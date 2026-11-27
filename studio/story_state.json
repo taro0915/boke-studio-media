@@ -42,8 +42,14 @@
    "time": "2026-11-27T12:16:11+09:00",
    "kind": "sukatto",
    "media_id": "18120772127109888",
-   "permalink": "https://www.instagram.com/p/DgOsU-hm0rG/"
+   "permalink": "https://www.instagram.com/p/DgOsU-hm0rG/",
+   "sequel_done": true
   }
  },
- "pending": null
+ "pending": {
+  "dir": "2026-11-27_2230",
+  "kind": "sukatto",
+  "part": null,
+  "no": 8
+ }
 }
