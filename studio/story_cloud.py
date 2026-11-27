@@ -19,12 +19,22 @@ STATE = ROOT / "story_state.json"
 REPO = os.environ.get("GITHUB_REPOSITORY", "taro0915/boke-studio-media")
 RAW = f"https://raw.githubusercontent.com/{REPO}/main/studio/stories"
 API = "https://graph.facebook.com/v24.0"
-SLOT_HOURS = [12, 22]  # 昼休みと寝る前（話カルーセルはボケの約3倍読まれるため1日2本）
+SLOT_HOURS = [11, 22]  # 互換用（時のみ）
+# 投稿の時刻（時, 分）。お昼は休憩前に読まれるよう11:30（2026-11-27 本人の希望）。
+# Cloudflareのタイマーは毎時17分と47分に動くので、予定の15分前から投稿してよい（→11:17ごろ・22:17ごろ・7:17ごろ）
+SLOTS2 = [(11, 30), (22, 30)]
+SLOTS3 = [(7, 30), (11, 30), (22, 30)]
 THREE_FROM = "2026-12-02"  # この日から朝7時台（通勤電車）を足して1日3本
 
 
+def slots():
+    base = now().replace(second=0, microsecond=0)
+    lst = SLOTS3 if now().date().isoformat() >= THREE_FROM else SLOTS2
+    return [base.replace(hour=h, minute=m) for h, m in lst]
+
+
 def slot_hours():
-    return [7, 12, 22] if now().date().isoformat() >= THREE_FROM else SLOT_HOURS
+    return [t.hour for t in slots()]
 MIN_GAP_SEC = 4 * 3600  # 前の話から4時間あける（11/26 遅れて動いた回で90分後にもう1本出たため）
 W, H = 1080, 1350
 BG, FG, SUB = (43, 43, 43), (236, 233, 226), (150, 147, 140)
@@ -418,9 +428,10 @@ def build(force=False):
     if st.get("pending"):
         log("未投稿の pending あり"); return 0
     today = now().date().isoformat()
-    slot = f"{today}_{now().hour:02d}"
-    # 投稿の1時間前に作っておく（作成に約10分かかり、投稿が遅れるため。2026-11-26）
-    if not force and (now().hour + 1 not in slot_hours() or slot in st["posted"]):
+    # 投稿予定の100分前〜60分後のあいだに作る（作成に10〜15分かかるため、前の回で作っておく）
+    nxt_slot = next((t for t in slots() if t - datetime.timedelta(minutes=100) <= now() < t + datetime.timedelta(minutes=60)), None)
+    slot = f"{today}_{nxt_slot.strftime('%H%M')}" if nxt_slot else f"{today}_{now().hour:02d}"
+    if not force and (nxt_slot is None or slot in st["posted"]):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None
@@ -455,8 +466,8 @@ def build(force=False):
     slide(closing, "※この話はフィクションです", kind).save(out / f"{len(slides) + 1}.jpg", quality=90)
     three = 7 in slot_hours()
     h = now().hour
-    nxt = "今日のお昼12時" if h < 10 else ("今夜22時" if h < 17 else ("明日の朝7時" if three else "明日のお昼12時"))
-    when = "毎日7時・12時・22時に1話ずつ" if three else "毎日12時と22時に1話ずつ"
+    nxt = "今日のお昼11時半" if h < 10 else ("今夜22時半" if h < 17 else ("明日の朝7時半" if three else "明日のお昼11時半"))
+    when = "毎日7時半・11時半・22時半に1話ずつ" if three else "毎日11時半と22時半に1話ずつ"
     slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", when, kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
     caption = (f"【{series}】{slides[0]}\n\n{question} コメントで教えてね👇\n\n思い当たる人がいたら、紙ひこうきのマークでこの話を送ってみてください✈️\n\n"
                + (f"前のお話（No.{sequel_of}）は、プロフィールから読めます📌\n\n" if sequel_of else "") + f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
@@ -496,8 +507,8 @@ def publish(dry=False):
     if not p:
         log("pending なし"); return 0
     tok, uid = os.environ["IG_ACCESS_TOKEN"], os.environ["IG_USER_ID"]
-    if not dry and not any(now().hour in (h, h + 1) for h in slot_hours()):
-        log("投稿は22時台（遅れても23時台）だけ。pending は次の枠で投稿"); return 0
+    if not dry and not any(t - datetime.timedelta(minutes=15) <= now() < t + datetime.timedelta(minutes=120) for t in slots()):
+        log("投稿予定の時刻ではありません。pending は次の枠で投稿"); return 0
     if not dry:
         latest = api("GET", f"{uid}/media", tok, fields="timestamp", limit=1).get("data", [])
         if latest:

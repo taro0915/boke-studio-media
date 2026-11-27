@@ -53,9 +53,11 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
           h=$(TZ=Asia/Tokyo date +%H)
-          d=$(TZ=Asia/Tokyo date +%F); morning=no; [ "$h" = "06" ] && [ "$d" \> "2026-12-01" ] && morning=yes
+          d=$(TZ=Asia/Tokyo date +%F); morning=no; { [ "$h" = "06" ] || [ "$h" = "07" ]; } && [ "$d" \> "2026-12-01" ] && morning=yes
           # 投稿の1時間前（11時・21時、12/2からは6時も）に作っておく
-          if [ "$h" = "11" ] || [ "$h" = "21" ] || [ "$morning" = "yes" ] || [ "${{ inputs.story_force }}" = "true" ]; then
+          # 作るかどうかの細かい判断はPython側（投稿予定の100分前〜60分後）。ここでは時間帯だけしぼる
+          case "$h" in 09|10|11|12|20|21|22|23) slot=yes;; *) slot=no;; esac
+          if [ "$slot" = "yes" ] || [ "$morning" = "yes" ] || [ "${{ inputs.story_force }}" = "true" ]; then
             sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
             python studio/story_cloud.py build ${{ inputs.story_force && '--force' || '' }}
           fi
