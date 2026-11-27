@@ -24,7 +24,11 @@ SLOT_HOURS = [11, 22]  # 互換用（時のみ）
 # Cloudflareのタイマーは毎時17分と47分に動くので、予定の15分前から投稿してよい（→11:17ごろ・22:17ごろ・7:17ごろ）
 SLOTS2 = [(11, 30), (22, 30)]
 SLOTS3 = [(7, 30), (11, 30), (22, 30)]
-THREE_FROM = "2026-12-02"  # この日から朝7時台（通勤電車）を足して1日3本
+THREE_FROM = "2026-12-02"
+# 前後編：水曜と日曜は、お昼に「前編」、夜に「後編」（フォローの理由を作る。2026-11-27 本人OK）
+PART_FROM = "2026-12-02"
+PART_WEEKDAYS = {2, 6}  # 月=0 … 水=2, 日=6
+PART_NOTE = ""  # 読者テストに渡す注意書き（前編は結末が出ないのが正しい）  # この日から朝7時台（通勤電車）を足して1日3本
 
 
 def slots():
@@ -301,7 +305,7 @@ def reader_check(slides):
     """別のAIに『初めての読者』として読ませ、わからない所があれば直す（最大2回）。"""
     for _ in range(2):
         body = "\n".join(f"{i}. {x}" for i, x in enumerate(slides, 1))
-        r = claude(READER.format(body=body))
+        r = claude(PART_NOTE + READER.format(body=body))
         if not r:
             return slides
         log("読者テスト:", r.get("summary", "")[:80], "| わかりにくい:", r.get("unclear"))
@@ -318,7 +322,7 @@ def reader_check(slides):
 def _ask_once(kind, stage=None, extra=""):
     drafts = []
     base = KINDS[kind] + (f"。今回の舞台は「{stage}」" if stage else "")
-    picks = [] if "続編" in extra else pick_loglines(base, extra)
+    picks = [] if ("続編" in extra or "後編" in extra) else pick_loglines(base, extra)
     for i in range(3):
         idea = f"。\nこの企画で書く：「{picks[i]}」" if i < len(picks) else ""
         d = claude(PROMPT.format(kind=base + extra + idea))
@@ -440,16 +444,38 @@ def build(force=False):
         log("投稿枠ではないので作りません"); return 0
     kind = ROTATION[len(st["posted"]) % len(ROTATION)]
     stage = STAGES[len(st["posted"]) % len(STAGES)] if kind == "sukatto" else None
+    global PART_NOTE
+    PART_NOTE = ""
+    part, zen_key = None, None
+    if not force and today >= PART_FROM and now().weekday() in PART_WEEKDAYS and nxt_slot is not None:
+        if (nxt_slot.hour, nxt_slot.minute) == (11, 30):
+            part = "前編"
+        elif nxt_slot.hour == 22:
+            zen_key = next((k for k, v in st["posted"].items() if k.startswith(today) and v.get("part") == "前編"), None)
+            part = "後編" if zen_key else None
     sequel_of = None
-    hot = None if force else find_hot(st)
+    hot = None if (force or part) else find_hot(st)
     extra = sequel_extra(hot[0], hot[2]) if hot else None
     if hot and extra:
         sequel_of = hot[2]
         kind, stage = hot[1]["kind"], None
         st["posted"][hot[0]]["sequel_done"] = True
         log(f"伸びている話 No.{sequel_of} の続編を作ります（{hot[3]:.0f}回/時）")
-    if not extra:
-        extra = ""
+    if part == "後編":
+        zen = json.loads((OUT / zen_key / "story.json").read_text(encoding="utf-8"))
+        kind, stage = zen["kind"], None
+        extra = ("。\nこれは今日のお昼に出した『前編』の続き（後編）。前編は一番気になるところで終わっている。"
+                 "後編の1枚目は前編を読んでいない人も止まる『ありえない瞬間』にし、2枚目で前編のあらすじを1〜2文で入れる。"
+                 "登場人物と呼び名は前編と同じ。前編の謎や伏線をすべて回収し、最後に大きな意外とスカッと（または感動）を必ず入れる。\n【前編】\n"
+                 + "\n".join(zen["slides"]))
+    elif part == "前編":
+        PART_NOTE = "【注意】これは2回に分けた話の前編です。結末は今夜の後編で明かすので、最後が気になるところで終わっているのは正しい。結末がないことは指摘しないでください。\n\n"
+    if not extra or part == "前編":
+        extra = extra or ""
+        if part == "前編":
+            extra += ("。\nこれは2回に分ける話の『前編』。いつもより大きな話にし、前編は13〜16枚で、"
+                      "一番気になるところ（相手の正体や決め手が明かされる直前）で止める。結末やオチは書かない。"
+                      "最後の1枚は『この続きは今夜。』と読者が思わずにいられない一文にする。")
         if kind == "sukatto":
             extra += "。返し方の型は「" + TWISTS[len(st["posted"]) % len(TWISTS)] + "」。相手役は舞台に合った人物にする（会社以外の舞台で上司や部長を出さない）"
         rec = recent_summary(st)
@@ -463,24 +489,34 @@ def build(force=False):
     # 通し番号（シリーズとして集めたくなるように）
     no = len(st["posted"]) + 1
     label = {"sukatto": "スカッとする話", "shuraba": "修羅場の話", "donden": "どんでん返しの話", "unlucky": "ついてない話", "naki": "泣ける話"}[kind]
-    series = f"{label} No.{no}" + (f"（No.{sequel_of}の続き）" if sequel_of else "")
+    if part == "後編":
+        no = st["posted"][zen_key].get("no", no - 1)
+    series = f"{label} No.{no}" + (f"（No.{sequel_of}の続き）" if sequel_of else "") + (f"・{part}" if part else "")
     for i, s in enumerate(slides, 1):
         slide(s, series if i == 1 else None, kind).save(out / f"{i}.jpg", quality=90)
     # 最後に「感想を聞く」1枚（いいね・コメントは最後に押されるため）＋フォローする理由（次の話が届く）
-    closing = question + "\nコメントで教えてください。\n\n身近に「こういう人」がいたら、\nこの話をそっと送ってあげてください。"
+    if part == "前編":
+        question = "この続き、どうなると思いますか？"
+        closing = "この続き、どうなると思いますか？\n予想をコメントで教えてください。\n\n後編は今夜22時半。"
+    else:
+        closing = question + "\nコメントで教えてください。\n\n身近に「こういう人」がいたら、\nこの話をそっと送ってあげてください。"
     slide(closing, "※この話はフィクションです", kind).save(out / f"{len(slides) + 1}.jpg", quality=90)
     three = 7 in slot_hours()
     h = now().hour
     nxt = "今日のお昼11時半" if h < 10 else ("今夜22時半" if h < 17 else ("明日の朝7時半" if three else "明日のお昼11時半"))
     when = "毎日7時半・11時半・22時半に1話ずつ" if three else "毎日11時半と22時半に1話ずつ"
-    slide(f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。", when, kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
+    follow_text = ("後編は、\n今夜22時半に更新します。\nフォローしておくと、\n続きを見逃しません。" if part == "前編"
+                   else f"次の話は、\n{nxt}に更新します。\nフォローしておくと、\n見逃しません。")
+    slide(follow_text, when, kind).save(out / f"{len(slides) + 2}.jpg", quality=90)
     caption = (f"【{series}】{slides[0]}\n\n{question} コメントで教えてね👇\n\n思い当たる人がいたら、紙ひこうきのマークでこの話を送ってみてください✈️\n\n"
-               + (f"前のお話（No.{sequel_of}）は、プロフィールから読めます📌\n\n" if sequel_of else "") + f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
+               + (f"前のお話（No.{sequel_of}）は、プロフィールから読めます📌\n\n" if sequel_of else "")
+               + ("【後編は今夜22時半】フォローしておくと、続きを見逃しません🔔\n\n" if part == "前編" else "")
+               + ("前編は、プロフィールから読めます📌\n\n" if part == "後編" else "") + f"{when}更新しています。続きを見逃さないように、フォローしておいてください📖\n\n"
                + "※AIで作った創作のお話です。実在の人物・団体とは関係ありません。\n\n"
                + " ".join(dict.fromkeys(tags + ["#創作", "#短編", {"sukatto": "#スカッとする話", "shuraba": "#修羅場", "donden": "#どんでん返し", "unlucky": "#ついてない話", "naki": "#泣ける話"}[kind]])))
     (out / "caption.txt").write_text(caption, encoding="utf-8")
     (out / "story.json").write_text(json.dumps({"kind": kind, "slides": slides}, ensure_ascii=False, indent=1), encoding="utf-8")
-    st["pending"] = {"dir": key, "kind": kind}
+    st["pending"] = {"dir": key, "kind": kind, "part": part, "no": no}
     save_state(st)
     log("作成:", key, kind, len(slides), "枚")
     return 0
@@ -548,7 +584,8 @@ def publish(dry=False):
         log("dry-run: コンテナ作成OK（投稿していません）", len(children), "枚"); return 0
     mid = api("POST", f"{uid}/media_publish", tok, creation_id=parent)["id"]
     link = api("GET", mid, tok, fields="permalink").get("permalink", "")
-    st["posted"][p["dir"]] = {"time": now().isoformat(timespec="seconds"), "kind": p["kind"], "media_id": mid, "permalink": link}
+    st["posted"][p["dir"]] = {"time": now().isoformat(timespec="seconds"), "kind": p["kind"], "media_id": mid, "permalink": link,
+                              "part": p.get("part"), "no": p.get("no")}
     st["pending"] = None
     save_state(st)
     log("投稿完了:", link)
