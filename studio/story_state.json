@@ -62,5 +62,10 @@
    "no": 9
   }
  },
- "pending": null
+ "pending": {
+  "dir": "2026-11-28_2230",
+  "kind": "sukatto",
+  "part": null,
+  "no": 10
+ }
 }
